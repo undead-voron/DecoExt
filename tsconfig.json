@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "jsx": "preserve",
+    "lib": ["esnext", "dom"],
+    "useDefineForClassFields": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "baseUrl": ".",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "paths": {
+      "~/*": ["src/*"]
+    },
+    "resolveJsonModule": true,
+    "strict": true,
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "references": [{ "path": "./tsconfig.node.json" }],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"]
+}
