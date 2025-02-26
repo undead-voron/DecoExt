@@ -1,6 +1,7 @@
 {
   "name": "deco-ext",
   "displayName": "DecoExt",
+  "package-name": "deco-ext",
   "type": "module",
   "version": "1.0.0",
   "description": "Library for implementing SOLID principles in your browser extension project",
