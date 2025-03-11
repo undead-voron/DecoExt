@@ -1,5 +1,6 @@
 export * from './alarms'
 export * from './bookmarks'
+export * from './commands'
 export * from './cronJob'
 export * from './history'
 export * from './injectablesContainer'
