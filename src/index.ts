@@ -1,4 +1,5 @@
 export * from './cronJob'
+export * from './history'
 export * from './injectablesContainer'
 export * from './instanceResolver'
 export * from './messaging'
