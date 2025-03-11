@@ -1,3 +1,4 @@
+export * from './alarms'
 export * from './cronJob'
 export * from './history'
 export * from './injectablesContainer'
