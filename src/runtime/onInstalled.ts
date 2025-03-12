@@ -1,8 +1,8 @@
 import browser from 'webextension-polyfill'
 
 import { callOnce } from '~/utils'
-import container from './injectablesContainer'
-import { resolve } from './instanceResolver'
+import container from '../injectablesContainer'
+import { resolve } from '../instanceResolver'
 
 type AllowedListener = (() => unknown) | ((arg: { details: browser.Runtime.OnInstalledDetailsType }) => unknown)
 
