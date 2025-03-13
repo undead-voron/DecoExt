@@ -1,57 +1,22 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { info: browser.Management.ExtensionInfo }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((info: browser.Management.ExtensionInfo) => unknown)
 
-const listeners = new Set<(arg: { info: browser.Management.ExtensionInfo }) => Promise<void>>()
+const listeners = new Set<(info: browser.Management.ExtensionInfo) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.management.onDisabled.addListener((info) => {
     for (const listener of listeners)
-      listener({ info })
+      listener(info)
   })
 })
 
-const extensionInfoDecoratorInfo = createDecorator<keyof browser.Management.ExtensionInfo | void>('disabledExtensionInfo')
+const { listenerWrapper, decorator } = buildDecoratorAndMethodWrapper<browser.Management.ExtensionInfo, AllowedListener>('disabledExtensionInfo')
 
-export const disabledExtensionInfo = extensionInfoDecoratorInfo.decorator
-
-// map onDisabled data to parameter decorators
-function decoratorsHandler(arg: { info: browser.Management.ExtensionInfo }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingInfoParameters: { index: number, key?: keyof browser.Management.ExtensionInfo }[] = Reflect.getOwnMetadata(extensionInfoDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingInfoParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingInfoParameters) {
-      customArg[index] = key ? arg.info[key] : arg.info
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { info: browser.Management.ExtensionInfo }): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor) {
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-    }
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
-  }
-}
-
+export const disabledExtensionInfo = decorator
 /**
  * @overview
  *
