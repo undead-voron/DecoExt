@@ -1,10 +1,8 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 
-import { resolve } from '~/instanceResolver'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
 
 interface TabReplacedDetails {
   replacedTabId: number
@@ -27,38 +25,9 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-const detailsInfoDecorator = createDecorator<keyof browser.WebNavigation.OnTabReplacedDetailsType | void>('onHistoryStateUpdatedDetails')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnTabReplacedDetailsType, AllowedListener>('onHistoryStateUpdatedDetails')
 
-function decoratorsHandler(arg: browser.WebNavigation.OnTabReplacedDetailsType, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingDetailsParameters: { index: number, key?: keyof browser.WebNavigation.OnTabReplacedDetailsType }[] = Reflect.getOwnMetadata(detailsInfoDecorator.key, constructor, propertyKey) || []
-
-  if (existingDetailsParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingDetailsParameters) {
-      customArg[index] = key ? arg[key] : arg
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-export const tabReplacedDetails = detailsInfoDecorator.decorator
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (details: browser.WebNavigation.OnTabReplacedDetailsType): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(details, constructor, propertyKey))
-  }
-}
+export const tabReplacedDetails = decorator
 
 /**
  * @overview
@@ -82,8 +51,8 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * - @tabReplacedDetails('timeStamp'): The time when the replacement happened
  */
 export function onTabReplaced<T extends AllowedListener>() {
+  createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    createInitialListener()
     listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
   }
 }
