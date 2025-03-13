@@ -1,10 +1,8 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
-import { resolve } from '~/instanceResolver'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
 
 type AllowedListener =
   ((...args: any[]) => any) |
@@ -20,38 +18,9 @@ const createInitialListener = callOnce(() => {
     }
   })
 })
-const detailsInfoDecorator = createDecorator<keyof browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType | void>('onReferenceFragmentUpdatedDetails')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType, AllowedListener>('onReferenceFragmentUpdatedDetails')
 
-function decoratorsHandler(arg: browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingDetailsParameters: { index: number, key?: keyof browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType }[] = Reflect.getOwnMetadata(detailsInfoDecorator.key, constructor, propertyKey) || []
-
-  if (existingDetailsParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingDetailsParameters) {
-      customArg[index] = key ? arg[key] : arg
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-export const referenceFragmentUpdatedDetails = detailsInfoDecorator.decorator
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (details: browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(details, constructor, propertyKey))
-  }
-}
+export const referenceFragmentUpdatedDetails = decorator
 
 /**
  * @overview
@@ -74,8 +43,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * - transitionQualifiers: An array of qualifiers describing the transition
  */
 export function onReferenceFragmentUpdated<T extends AllowedListener>() {
-  return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
     createInitialListener()
+
+  return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
     listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
   }
 }

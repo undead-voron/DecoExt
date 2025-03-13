@@ -1,55 +1,22 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper} from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { details: browser.WebNavigation.OnCommittedDetailsType }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((details: browser.WebNavigation.OnCommittedDetailsType) => unknown)
 
-const listeners = new Set<(arg: { details: browser.WebNavigation.OnCommittedDetailsType }) => Promise<void>>()
+const listeners = new Set<(details: browser.WebNavigation.OnCommittedDetailsType) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.webNavigation.onCommitted.addListener((details) => {
     for (const listener of listeners)
-      listener({ details })
+      listener(details)
   })
 })
 
-const detailsDecoratorInfo = createDecorator<keyof browser.WebNavigation.OnCommittedDetailsType | void>('committedNavigationDetails')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnCommittedDetailsType, AllowedListener>('committedNavigationDetails')
 
-export const committedNavigationDetails = detailsDecoratorInfo.decorator
-
-// map onCommitted data to parameter decorators
-function decoratorsHandler(arg: { details: browser.WebNavigation.OnCommittedDetailsType }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingDetailsParameters: { index: number, key?: keyof browser.WebNavigation.OnCommittedDetailsType }[] = Reflect.getOwnMetadata(detailsDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingDetailsParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingDetailsParameters) {
-      customArg[index] = key ? arg.details[key] : arg.details
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { details: browser.WebNavigation.OnCommittedDetailsType }): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
-  }
-}
+export const navigationCommittedDetails = decorator
 
 /**
  * @overview

@@ -1,55 +1,22 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { details: browser.WebNavigation.OnBeforeNavigateDetailsType }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((details: browser.WebNavigation.OnBeforeNavigateDetailsType) => unknown)
 
-const listeners = new Set<(arg: { details: browser.WebNavigation.OnBeforeNavigateDetailsType }) => Promise<void>>()
+const listeners = new Set<(details: browser.WebNavigation.OnBeforeNavigateDetailsType) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.webNavigation.onBeforeNavigate.addListener((details) => {
     for (const listener of listeners)
-      listener({ details })
+      listener(details)
   })
 })
 
-const detailsDecoratorInfo = createDecorator<keyof browser.WebNavigation.OnBeforeNavigateDetailsType | void>('navigationDetails')
+const { listenerWrapper, decorator } = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnBeforeNavigateDetailsType, AllowedListener>('navigationDetails')
 
-export const navigationDetails = detailsDecoratorInfo.decorator
-
-// map onBeforeNavigate data to parameter decorators
-function decoratorsHandler(arg: { details: browser.WebNavigation.OnBeforeNavigateDetailsType }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingDetailsParameters: { index: number, key?: keyof browser.WebNavigation.OnBeforeNavigateDetailsType }[] = Reflect.getOwnMetadata(detailsDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingDetailsParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingDetailsParameters) {
-      customArg[index] = key ? arg.details[key] : arg.details
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { details: browser.WebNavigation.OnBeforeNavigateDetailsType }): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
-  }
-}
+export const navigationDetails = decorator
 
 /**
  * @overview

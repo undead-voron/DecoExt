@@ -1,5 +1,5 @@
 import browser from 'webextension-polyfill'
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper, createDecorator } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
 
 import container from '../injectablesContainer'
@@ -19,39 +19,9 @@ const createInitialListener = callOnce(() => {
     }
   })
 })
+const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnHistoryStateUpdatedDetailsType , AllowedListener>('onHistoryStateUpdatedDetails')
 
-const detailsInfoDecorator = createDecorator<keyof browser.WebNavigation.OnHistoryStateUpdatedDetailsType | void>('onHistoryStateUpdatedDetails')
-
-function decoratorsHandler(arg: browser.WebNavigation.OnHistoryStateUpdatedDetailsType, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingDetailsParameters: { index: number, key?: keyof browser.WebNavigation.OnHistoryStateUpdatedDetailsType }[] = Reflect.getOwnMetadata(detailsInfoDecorator.key, constructor, propertyKey) || []
-
-  if (existingDetailsParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingDetailsParameters) {
-      customArg[index] = key ? arg[key] : arg
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-export const historyStateUpdatedDetails = detailsInfoDecorator.decorator
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (details: browser.WebNavigation.OnHistoryStateUpdatedDetailsType): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(details, constructor, propertyKey))
-  }
-}
+export const historyStateUpdatedDetails = decorator
 
 /**
  * @overview
