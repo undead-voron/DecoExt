@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill'
 
-import { buildDecoratorAndMethodWrapper} from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
 
 type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((details: browser.WebNavigation.OnCommittedDetailsType) => unknown)

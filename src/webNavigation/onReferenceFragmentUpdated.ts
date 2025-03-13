@@ -43,7 +43,7 @@ export const referenceFragmentUpdatedDetails = decorator
  * - transitionQualifiers: An array of qualifiers describing the transition
  */
 export function onReferenceFragmentUpdated<T extends AllowedListener>() {
-    createInitialListener()
+  createInitialListener()
 
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
     listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
