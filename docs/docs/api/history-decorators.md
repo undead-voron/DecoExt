@@ -14,8 +14,7 @@ The History decorators allow you to easily respond to browser history events in 
 This decorator handles browser history visit events. It attaches a listener to `browser.history.onVisited` events.
 
 ```typescript
-import { onHistoryVisited, historyItem } from 'deco-ext';
-import { InjectableService } from 'deco-ext';
+import { historyItem, InjectableService, onHistoryVisited } from 'deco-ext';
 
 @InjectableService()
 class HistoryService {
@@ -33,8 +32,8 @@ The decorated method is called whenever a user visits a page that gets added to 
 This decorator handles browser history deletion events. It attaches a listener to `browser.history.onVisitRemoved` events.
 
 ```typescript
-import { onHistoryVisitRemoved, removedInfo } from 'deco-ext';
-import { InjectableService } from 'deco-ext';
+import { InjectableService, onHistoryVisitRemoved, removedInfo } from 'deco-ext';
+import browser from 'webextension-polyfill'
 
 @InjectableService()
 class HistoryCleanupService {
@@ -60,8 +59,7 @@ The library also provides parameter decorators to extract specific properties fr
 Used with `onHistoryVisited` to extract specific properties from the history item:
 
 ```typescript
-import { onHistoryVisited, historyItem } from 'deco-ext';
-import { InjectableService } from 'deco-ext';
+import { historyItem, InjectableService, onHistoryVisited } from 'deco-ext';
 
 @InjectableService()
 class HistoryMonitorService {
@@ -81,8 +79,7 @@ class HistoryMonitorService {
 Used with `onHistoryVisitRemoved` to extract specific properties from the removed info:
 
 ```typescript
-import { onHistoryVisitRemoved, removedInfo } from 'deco-ext';
-import { InjectableService } from 'deco-ext';
+import { InjectableService, onHistoryVisitRemoved, removedInfo } from 'deco-ext';
 
 @InjectableService()
 class HistoryCleanupService {
@@ -108,7 +105,7 @@ The decorators use the following types from the `browser.History` API:
 // HistoryItem structure
 interface HistoryItem {
   id: string;
-  url: string;
+  url?: string;
   title?: string;
   lastVisitTime?: number;
   visitCount?: number;
