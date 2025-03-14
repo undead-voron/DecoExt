@@ -39,7 +39,8 @@
     "ci:publish": "pnpm publish --no-git-checks",
     "ci:bump-version": "pnpm version minor",
     "ci:patch-version": "pnpm version patch",
-    "ci:bump-version-major": "pnpm version major"
+    "ci:bump-version-major": "pnpm version major",
+    "docs": "pnpm --filter docs"
   },
   "dependencies": {
     "reflect-metadata": "^0.2.2",
