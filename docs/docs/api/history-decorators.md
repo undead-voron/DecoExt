@@ -20,7 +20,7 @@ import { InjectableService } from 'deco-ext';
 @InjectableService()
 class HistoryService {
   @onHistoryVisited()
-  handleHistoryVisit(historyItem) {
+  handleHistoryVisit(historyItem: browser.History.HistoryItem) {
     console.log('Page visited:', historyItem.url);
   }
 }
@@ -34,16 +34,16 @@ This decorator handles browser history deletion events. It attaches a listener t
 
 ```typescript
 import { onHistoryVisitRemoved, removedInfo } from 'deco-ext';
-import { Service } from 'deco-ext';
+import { InjectableService } from 'deco-ext';
 
-@Service()
+@InjectableService()
 class HistoryCleanupService {
   @onHistoryVisitRemoved()
-  handleHistoryRemoval(removedInfo) {
-    if (removedInfo.allHistory) {
+  handleHistoryRemoval(removed: browser.History.OnVisitRemovedRemovedType) {
+    if (removed.allHistory) {
       console.log('All browsing history was cleared');
     } else {
-      console.log(`${removedInfo.urls.length} URLs were removed from history`);
+      console.log(`${removed.urls.length} URLs were removed from history`);
     }
   }
 }
@@ -61,9 +61,9 @@ Used with `onHistoryVisited` to extract specific properties from the history ite
 
 ```typescript
 import { onHistoryVisited, historyItem } from 'deco-ext';
-import { Service } from 'deco-ext';
+import { InjectableService } from 'deco-ext';
 
-@Service()
+@InjectableService()
 class HistoryMonitorService {
   @onHistoryVisited()
   logVisits(
@@ -82,9 +82,9 @@ Used with `onHistoryVisitRemoved` to extract specific properties from the remove
 
 ```typescript
 import { onHistoryVisitRemoved, removedInfo } from 'deco-ext';
-import { Service } from 'deco-ext';
+import { InjectableService } from 'deco-ext';
 
-@Service()
+@InjectableService()
 class HistoryCleanupService {
   @onHistoryVisitRemoved()
   logRemovals(

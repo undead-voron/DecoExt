@@ -9,16 +9,16 @@ DecoExt is a library that simplifies working with Chrome Extension APIs by provi
 ## Installation
 
 ```bash
-npm install deco-ext
+pnpm add deco-ext
 ```
 
 ## Quick Start
 
 ```typescript
-import { Service } from 'deco-ext';
+import { InjectableService } from 'deco-ext';
 import { onHistoryVisited, historyItem } from 'deco-ext';
 
-@Service()
+@InjectableService()
 class MyHistoryService {
   @onHistoryVisited()
   logPageVisits(@historyItem('url') url: string) {
