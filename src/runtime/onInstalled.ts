@@ -3,7 +3,7 @@ import browser from 'webextension-polyfill'
 import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
 
-type AllowedListener = (() => unknown) | ((details: browser.Runtime.OnInstalledDetailsType) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((details: browser.Runtime.OnInstalledDetailsType) => unknown)
 
 const listeners = new Set<(details: browser.Runtime.OnInstalledDetailsType) => Promise<void>>()
 
