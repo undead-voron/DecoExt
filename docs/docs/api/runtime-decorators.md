@@ -19,8 +19,8 @@ import { onInstalled, InjectableService } from 'deco-ext';
 @InjectableService()
 class SetupService {
   @onInstalled()
-  handleInstallation(arg: { details: browser.Runtime.OnInstalledDetailsType }) {
-    const { reason, previousVersion } = arg.details;
+  handleInstallation(details: browser.Runtime.OnInstalledDetailsType) {
+    const { reason, previousVersion } = details;
     
     if (reason === 'install') {
       console.log('Extension was installed for the first time');
@@ -42,6 +42,32 @@ class SetupService {
 }
 ```
 
+With parameter decorator:
+
+```typescript
+import { onInstalled, installedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class SetupService {
+  @onInstalled()
+  handleInstallation(
+    @installedDetails('reason') reason: string,
+    @installedDetails('previousVersion') previousVersion?: string,
+    @installedDetails('temporary') isTemporary?: boolean
+  ) {
+    if (reason === 'install') {
+      console.log('First-time installation');
+    } else if (reason === 'update') {
+      console.log(`Updated from ${previousVersion}`);
+    }
+    
+    if (isTemporary) {
+      console.log('This is a temporary installation (developer mode)');
+    }
+  }
+}
+```
+
 The `onInstalled` decorator also accepts filtering options to only execute for specific installation reasons:
 
 ```typescript
@@ -51,19 +77,19 @@ import { onInstalled, InjectableService } from 'deco-ext';
 class SetupService {
   // Only runs on first installation
   @onInstalled({ reason: 'install' })
-  firstTimeSetup(arg: { details: browser.Runtime.OnInstalledDetailsType }) {
+  firstTimeSetup(details: browser.Runtime.OnInstalledDetailsType) {
     console.log('Setting up extension for first time use');
   }
   
   // Only runs on updates
   @onInstalled({ reason: 'update' })
-  handleUpdate(arg: { details: browser.Runtime.OnInstalledDetailsType }) {
-    console.log(`Updating from version ${arg.details.previousVersion}`);
+  handleUpdate(details: browser.Runtime.OnInstalledDetailsType) {
+    console.log(`Updating from version ${details.previousVersion}`);
   }
   
   // Only runs for temporary installations (during development)
   @onInstalled({ temporary: true })
-  devModeSetup(arg: { details: browser.Runtime.OnInstalledDetailsType }) {
+  devModeSetup(details: browser.Runtime.OnInstalledDetailsType) {
     console.log('Dev mode detected, setting up debugging tools');
   }
 }
@@ -179,7 +205,30 @@ class UpdateService {
 
 ## Parameter Decorators
 
-The only parameter decorator available in the Runtime API is for the `onUpdateAvailable` event:
+The Runtime API includes parameter decorators for specific event types:
+
+### installedDetails
+
+Used with `onInstalled` to extract specific properties from the installation details:
+
+```typescript
+import { onInstalled, installedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class ExtensionLifecycle {
+  @onInstalled()
+  logInstallationDetails(
+    @installedDetails('reason') reason: string,
+    @installedDetails('previousVersion') prevVersion?: string
+  ) {
+    console.log(`Installation event: ${reason}`);
+    
+    if (reason === 'update' && prevVersion) {
+      console.log(`Previous version: ${prevVersion}`);
+    }
+  }
+}
+```
 
 ### updateDetails
 
