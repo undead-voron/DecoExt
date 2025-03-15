@@ -19,15 +19,15 @@ import { onPermissionsAdded, InjectableService } from 'deco-ext';
 @InjectableService()
 class PermissionService {
   @onPermissionsAdded()
-  handleNewPermissions(arg: { permissions: browser.Permissions.Permissions }) {
+  handleNewPermissions(permissions: browser.Permissions.Permissions) {
     console.log('New permissions added:');
     
-    if (arg.permissions.origins && arg.permissions.origins.length > 0) {
-      console.log('Origins:', arg.permissions.origins);
+    if (permissions.origins && permissions.origins.length > 0) {
+      console.log('Origins:', permissions.origins);
     }
     
-    if (arg.permissions.permissions && arg.permissions.permissions.length > 0) {
-      console.log('Permissions:', arg.permissions.permissions);
+    if (permissions.permissions && permissions.permissions.length > 0) {
+      console.log('Permissions:', permissions.permissions);
     }
   }
 }
@@ -36,14 +36,14 @@ class PermissionService {
 With parameter decorator:
 
 ```typescript
-import { onPermissionsAdded, permissionDetatils, InjectableService } from 'deco-ext';
+import { onPermissionsAdded, permissionDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
 class PermissionService {
   @onPermissionsAdded()
   handleNewPermissions(
-    @permissionDetatils('origins') origins: string[],
-    @permissionDetatils('permissions') permissions: string[]
+    @permissionDetails('origins') origins: string[],
+    @permissionDetails('permissions') permissions: string[]
   ) {
     if (origins && origins.length > 0) {
       console.log('New origin permissions:', origins.join(', '));
@@ -66,17 +66,17 @@ import { onPermissionsRemoved, InjectableService } from 'deco-ext';
 @InjectableService()
 class PermissionService {
   @onPermissionsRemoved()
-  handleRemovedPermissions(arg: { permissions: browser.Permissions.Permissions }) {
+  handleRemovedPermissions(permissions: browser.Permissions.Permissions) {
     console.log('Permissions removed:');
     
-    if (arg.permissions.origins && arg.permissions.origins.length > 0) {
-      console.log('Origins:', arg.permissions.origins);
-      this.disableFeaturesDependingOnOrigins(arg.permissions.origins);
+    if (permissions.origins && permissions.origins.length > 0) {
+      console.log('Origins:', permissions.origins);
+      this.disableFeaturesDependingOnOrigins(permissions.origins);
     }
     
-    if (arg.permissions.permissions && arg.permissions.permissions.length > 0) {
-      console.log('Permissions:', arg.permissions.permissions);
-      this.disableFeaturesDependingOnPermissions(arg.permissions.permissions);
+    if (permissions.permissions && permissions.permissions.length > 0) {
+      console.log('Permissions:', permissions.permissions);
+      this.disableFeaturesDependingOnPermissions(permissions.permissions);
     }
   }
   
@@ -93,14 +93,14 @@ class PermissionService {
 With parameter decorator:
 
 ```typescript
-import { onPermissionsRemoved, permissionDetatils, InjectableService } from 'deco-ext';
+import { onPermissionsRemoved, permissionDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
 class PermissionService {
   @onPermissionsRemoved()
   handleRemovedPermissions(
-    @permissionDetatils('origins') origins: string[],
-    @permissionDetatils('permissions') permissions: string[]
+    @permissionDetails('origins') origins: string[],
+    @permissionDetails('permissions') permissions: string[]
   ) {
     if (origins && origins.length > 0) {
       console.log('Lost origin permissions:', origins.join(', '));
@@ -125,19 +125,19 @@ class PermissionService {
 
 ## Parameter Decorators
 
-### permissionDetatils
+### permissionDetails
 
 This parameter decorator can be used with both `onPermissionsAdded` and `onPermissionsRemoved` to extract specific properties from the permissions object:
 
 ```typescript
-import { onPermissionsAdded, permissionDetatils, InjectableService } from 'deco-ext';
+import { onPermissionsAdded, permissionDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
 class PermissionTracker {
   @onPermissionsAdded()
   trackPermissionChanges(
-    @permissionDetatils('origins') origins: string[],
-    @permissionDetatils('permissions') permissions: string[]
+    @permissionDetails('origins') origins: string[],
+    @permissionDetails('permissions') permissions: string[]
   ) {
     // Access specific properties from the permissions object
     console.log(`Added origins: ${origins?.join(', ') || 'none'}`);

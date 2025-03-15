@@ -1,40 +1,39 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
 import container from '../injectablesContainer'
 import { resolve } from '../instanceResolver'
 import { permissionsDetailsDecorator } from './propertyDecorator'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { permissions: browser.Permissions.Permissions }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((permissions: browser.Permissions.Permissions) => unknown)
 
-const listeners = new Set<(arg: { permissions: browser.Permissions.Permissions }) => Promise<void>>()
+const listeners = new Set<(permissions: browser.Permissions.Permissions) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.permissions.onAdded.addListener((permissions) => {
     for (const listener of listeners)
-      listener({ permissions })
+      listener(permissions)
   })
 })
 
 // map onAdded data to parameter decorators
-function decoratorsHandler(arg: { permissions: browser.Permissions.Permissions }, constructor: any, propertyKey: string | symbol): Array<any> {
+function decoratorsHandler(permissions: browser.Permissions.Permissions, constructor: any, propertyKey: string | symbol): Array<any> {
   const existingPermissionsParameters: { index: number, key?: keyof browser.Permissions.Permissions }[] = Reflect.getOwnMetadata(permissionsDetailsDecorator.key, constructor, propertyKey) || []
 
   if (existingPermissionsParameters.length) {
     const customArg = []
     for (const { index, key } of existingPermissionsParameters) {
-      customArg[index] = key ? arg.permissions[key] : arg.permissions
+      customArg[index] = key ? permissions[key] : permissions
     }
     return customArg
   }
   else {
-    return [arg]
+    return [permissions]
   }
 }
 
 function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { permissions: browser.Permissions.Permissions }): Promise<void> => {
+  return async (permissions: browser.Permissions.Permissions): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
@@ -44,7 +43,7 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
       // await instance initialization
       await instance.init()
     }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
+    method.call(instance, ...decoratorsHandler(permissions, constructor, propertyKey))
   }
 }
 
