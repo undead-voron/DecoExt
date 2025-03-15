@@ -173,8 +173,8 @@ import { onUpdateAvailable, InjectableService } from 'deco-ext';
 @InjectableService()
 class UpdateService {
   @onUpdateAvailable()
-  handleUpdateAvailable(arg: { details: { version: string } }) {
-    console.log(`Update available: version ${arg.details.version}`);
+  handleUpdateAvailable(details: { version: string }) {
+    console.log(`Update available: version ${details.version}`);
     
     // Optionally reload to apply update immediately
     // browser.runtime.reload();
