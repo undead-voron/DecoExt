@@ -1,11 +1,10 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
 import container from '../injectablesContainer'
 import { resolve } from '../instanceResolver'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { command: string }) => unknown)
+type AllowedListener = (() => unknown) | ((command: string) => unknown)
 
 const listeners = new Set<(arg: { command: string }) => Promise<void>>()
 
@@ -16,27 +15,7 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-const commandNameDecoratorInfo = createDecorator<'command' | void>('commandName')
-
-export const commandName = commandNameDecoratorInfo.decorator
-
-// map onCommand data to parameter decorators
-function decoratorsHandler(arg: { command: string }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingCommandParameters: { index: number, key?: 'command' }[] = Reflect.getOwnMetadata(commandNameDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingCommandParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingCommandParameters) {
-      customArg[index] = key ? arg[key] : arg.command
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol) {
   return async (arg: { command: string }): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
@@ -47,7 +26,7 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
       // await instance initialization
       await instance.init()
     }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
+    method.call(instance, arg.command)
   }
 }
 
