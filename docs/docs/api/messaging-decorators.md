@@ -46,7 +46,7 @@ import { onMessage, InjectableService } from 'deco-ext';
 
 @InjectableService()
 class AuthService {
-  @onMessage({ name: 'auth:login' })
+  @onMessage({ key: 'auth:login' })
   handleLogin(arg: { 
     data: { username: string; password: string }, 
     sender: browser.Runtime.MessageSender 
@@ -74,7 +74,7 @@ import { onMessage, messageData, InjectableService } from 'deco-ext';
 
 @InjectableService()
 class AuthService {
-  @onMessage({ name: 'auth:login' })
+  @onMessage({ key: 'auth:login' })
   handleLogin(
     @messageData() credentials: { username: string; password: string },
     @messageData('username') username: string
@@ -100,7 +100,7 @@ import { onMessage, messageData, messageSender, InjectableService } from 'deco-e
 
 @InjectableService()
 class ContentScriptCommunicator {
-  @onMessage({ name: 'content:report' })
+  @onMessage({ key: 'content:report' })
   handleContentReport(
     @messageData() data: { url: string; content: string },
     @messageSender() sender: browser.Runtime.MessageSender,
@@ -174,7 +174,7 @@ import { onMessage, messageData, InjectableService, sendMessageToContent } from 
 class DataService {
   private cache = new Map<string, any>();
 
-  @onMessage({ name: 'fetch:data' })
+  @onMessage({ key: 'fetch:data' })
   async handleFetchData(@messageData() query: string) {
     console.log(`Fetching data for query: ${query}`);
     
@@ -212,7 +212,7 @@ import { onMessage, messageData, sendMessageToBackground, InjectableService } fr
 
 @InjectableService()
 class ContentApp {
-  @onMessage({ name: 'data:update' })
+  @onMessage({ key: 'data:update' })
   handleDataUpdate(@messageData('update') update: any) {
     console.log('Received data update:', update);
     // Update UI with new data
