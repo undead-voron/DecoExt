@@ -37,7 +37,7 @@ function decoratorsHandler(details: browser.Runtime.OnInstalledDetailsType, cons
 
 function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'>> = {}) {
   return async (details: browser.Runtime.OnInstalledDetailsType): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor)
+    const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
 
