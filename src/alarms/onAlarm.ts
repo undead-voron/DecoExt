@@ -1,55 +1,22 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { alarm: browser.Alarms.Alarm }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((alarm: browser.Alarms.Alarm) => unknown)
 
-const listeners = new Set<(arg: { alarm: browser.Alarms.Alarm }) => Promise<void>>()
+const listeners = new Set<(alarm: browser.Alarms.Alarm) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.alarms.onAlarm.addListener((alarm) => {
     for (const listener of listeners)
-      listener({ alarm })
+      listener(alarm)
   })
 })
 
-const alarmDecoratorInfo = createDecorator<keyof browser.Alarms.Alarm | void>('alarm')
+const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.Alarms.Alarm, AllowedListener>('alarmInfo')
 
-export const alarm = alarmDecoratorInfo.decorator
-
-// map onAlarm data to parameter decorators
-function decoratorsHandler(arg: { alarm: browser.Alarms.Alarm }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingAlarmParameters: { index: number, key?: keyof browser.Alarms.Alarm }[] = Reflect.getOwnMetadata(alarmDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingAlarmParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingAlarmParameters) {
-      customArg[index] = key ? arg.alarm[key] : arg.alarm
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { alarm: browser.Alarms.Alarm }): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
-  }
-}
+export const alarmDetails = decorator
 
 /**
  * @overview
