@@ -7,6 +7,10 @@
   "description": "Library for implementing SOLID principles in your browser extension project",
   "author": "Den Inozemtsev",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/undead-voron/DecoExt",
+    "type": "git"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
