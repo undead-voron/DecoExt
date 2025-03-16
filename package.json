@@ -3,10 +3,14 @@
   "displayName": "DecoExt",
   "package-name": "deco-ext",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Library for implementing SOLID principles in your browser extension project",
   "author": "Den Inozemtsev",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/undead-voron/DecoExt",
+    "type": "git"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -40,7 +44,8 @@
     "ci:bump-version": "pnpm version minor",
     "ci:patch-version": "pnpm version patch",
     "ci:bump-version-major": "pnpm version major",
-    "docs": "pnpm --filter docs"
+    "docs": "pnpm --filter docs",
+    "playground": "pnpm --filter playground-extension"
   },
   "dependencies": {
     "reflect-metadata": "^0.2.2",

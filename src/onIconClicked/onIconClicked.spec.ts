@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import type { Tabs } from 'webextension-polyfill'
-import { InjectableService } from '../service'
-import { resolve } from '../instanceResolver'
+
+import { describe, expect, it, vi } from 'vitest'
 import { iconClickedDetails, onIconClicked } from '.'
+import { resolve } from '../instanceResolver'
+import { InjectableService } from '../service'
 
 describe('onIconClicked', async () => {
   const fakeTab: Tabs.Tab = {

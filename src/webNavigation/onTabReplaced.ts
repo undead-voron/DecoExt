@@ -56,4 +56,3 @@ export function onTabReplaced<T extends AllowedListener>() {
     listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
   }
 }
-

@@ -6,7 +6,7 @@ import { callOnce } from '~/utils'
 type SuggestResult = browser.Omnibox.SuggestResult
 type SuggestCallback = (suggestResults: SuggestResult[]) => void
 
-type InternalArgument = { text: string, suggest: SuggestCallback }
+interface InternalArgument { text: string, suggest: SuggestCallback }
 
 type AllowedListener =
   ((...args: any[]) => any) |
