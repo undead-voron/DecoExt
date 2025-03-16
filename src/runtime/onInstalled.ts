@@ -33,7 +33,7 @@ export function onInstalled<T extends AllowedListener>(
   arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'>> = {},
 ) {
   createInitialListener()
-  return (target: any, _propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target.constructor, descriptor.value as T, arg))
+  return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
   }
 }
