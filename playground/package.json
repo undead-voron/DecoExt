@@ -1,0 +1,33 @@
+{
+  "name": "playground-extension",
+  "displayName": "Vite Web Extension",
+  "author": "@samrum/vite-plugin-web-extension",
+  "description": "A @samrum/vite-plugin-web-extension web extension",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch --mode development --minify false",
+    "dev": "vite",
+    "serve:firefox": "web-ext run --start-url \"about:debugging#/runtime/this-firefox\"  --source-dir ./dist/",
+    "serve:chrome": "web-ext run -t chromium --start-url \"https://example.com\" --source-dir ./dist/"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@samrum/vite-plugin-web-extension": "^5.0.0",
+    "@types/chrome": "^0.0.254",
+    "@types/webextension-polyfill": "^0.10.6",
+    "@vitejs/plugin-vue": "^4.5.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.9.1",
+    "vue-tsc": "^2.0.26",
+    "web-ext": "^7.8.0"
+  },
+  "dependencies": {
+    "deco-ext": "workspace:^",
+    "reflect-metadata": "^0.2.2",
+    "vue": "^3.3.8",
+    "webextension-polyfill": "^0.10.0"
+  }
+}
