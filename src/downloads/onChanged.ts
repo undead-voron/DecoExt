@@ -15,7 +15,7 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.Downloads.OnChangedDownloadDeltaType, AllowedListener>('downloadDelta')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.Downloads.OnChangedDownloadDeltaType, AllowedListener>('downloadDelta')
 
 export const downloadDelta = decorator
 

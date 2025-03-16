@@ -14,7 +14,7 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.Alarms.Alarm, AllowedListener>('alarmInfo')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.Alarms.Alarm, AllowedListener>('alarmInfo')
 
 export const alarmDetails = decorator
 

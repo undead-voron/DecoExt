@@ -5,7 +5,7 @@ import { callOnce } from '~/utils'
 
 type DispositionType = browser.Omnibox.OnInputEnteredDisposition
 
-type InternalArg = { text: string, disposition: DispositionType }
+interface InternalArg { text: string, disposition: DispositionType }
 
 type AllowedListener =
   ((...args: any[]) => any) |

@@ -1,8 +1,8 @@
 import browser from 'webextension-polyfill'
 
+import { resolve } from '~/instanceResolver'
 import { callOnce } from '~/utils'
 import container from '../injectablesContainer'
-import { resolve } from '~/instanceResolver'
 
 type AllowedListener = () => unknown
 
@@ -16,20 +16,22 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-const listenerWrapper = (targetClass: any, method: AllowedListener, _propertyKey: string | symbol) => async (): Promise<void> => {
+function listenerWrapper(targetClass: any, method: AllowedListener, _propertyKey: string | symbol) {
+  return async (): Promise<void> => {
   // get class wrapper from classes container
-  const instanceWrapperConstructor = container.get(targetClass.constructor)
-  if (!instanceWrapperConstructor)
-    throw new Error('decorator should be applied on class decorated by "Service" decorator')
+    const instanceWrapperConstructor = container.get(targetClass.constructor)
+    if (!instanceWrapperConstructor)
+      throw new Error('decorator should be applied on class decorated by "Service" decorator')
 
-  // resolve class to get single instance of classp
-  const instance = resolve(instanceWrapperConstructor)
-  if (instance.init && typeof instance.init === 'function') {
+    // resolve class to get single instance of classp
+    const instance = resolve(instanceWrapperConstructor)
+    if (instance.init && typeof instance.init === 'function') {
     // await instance initialization
-    await instance.init()
+      await instance.init()
+    }
+    // call method only after class instance is resolved and all dependencies were resolved and initialized
+    method.call(instance)
   }
-  // call method only after class instance is resolved and all dependencies were resolved and initialized
-  method.call(instance)
 }
 /**
  * @overview

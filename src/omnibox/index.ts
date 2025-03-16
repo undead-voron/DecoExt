@@ -1,5 +1,5 @@
+export * from './onDeleteSuggestion'
 export * from './onInputCancelled'
 export * from './onInputChanged'
 export * from './onInputEntered'
 export * from './onInputStarted'
-export * from './onDeleteSuggestion'
