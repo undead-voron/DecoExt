@@ -1,43 +1,22 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
 import container from '../injectablesContainer'
 import { resolve } from '../instanceResolver'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { newState: browser.Idle.IdleState }) => unknown)
+type AllowedListener = (() => unknown) | ((newState: browser.Idle.IdleState) => unknown)
 
-const listeners = new Set<(arg: { newState: browser.Idle.IdleState }) => Promise<void>>()
+const listeners = new Set<(newState: browser.Idle.IdleState) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.idle.onStateChanged.addListener((newState) => {
     for (const listener of listeners)
-      listener({ newState })
+      listener(newState)
   })
 })
 
-const newStateDecoratorInfo = createDecorator<void>('newState')
-
-export const newState = newStateDecoratorInfo.decorator
-
-// map onStateChanged data to parameter decorators
-function decoratorsHandler(arg: { newState: browser.Idle.IdleState }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingStateParameters: { index: number }[] = Reflect.getOwnMetadata(newStateDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingStateParameters.length) {
-    const customArg = []
-    for (const { index } of existingStateParameters) {
-      customArg[index] = arg.newState
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { newState: browser.Idle.IdleState }): Promise<void> => {
+function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol) {
+  return async (newState: browser.Idle.IdleState): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
@@ -47,7 +26,7 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
       // await instance initialization
       await instance.init()
     }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
+    method.call(instance, newState)
   }
 }
 
