@@ -1,11 +1,11 @@
 ---
-sidebar_position: 16
+sidebar_position: 14
 title: Downloads Decorators
 ---
 
 # Downloads Decorators
 
-The Downloads decorators allow you to easily respond to browser download events in your extension services. These decorators provide a clean way to track and manage file downloads.
+The Downloads decorators allow you to easily respond to download events in your extension service. These decorators provide a clean way to monitor and react to downloads being created, changed, or erased.
 
 ## Method Decorators
 
@@ -17,13 +17,13 @@ This decorator handles events that fire when a download begins.
 import { onDownloadCreated, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class DownloadTracker {
+class DownloadMonitor {
   @onDownloadCreated()
-  handleNewDownload(arg: { downloadItem: browser.Downloads.DownloadItem }) {
-    console.log(`Download started: ${arg.downloadItem.filename}`);
-    console.log(`URL: ${arg.downloadItem.url}`);
-    console.log(`ID: ${arg.downloadItem.id}`);
-    console.log(`File size: ${arg.downloadItem.totalBytes} bytes`);
+  handleNewDownload(downloadItem: browser.Downloads.DownloadItem) {
+    console.log(`New download started: ${downloadItem.filename}`);
+    console.log(`Download ID: ${downloadItem.id}`);
+    console.log(`URL: ${downloadItem.url}`);
+    console.log(`File size: ${downloadItem.fileSize} bytes`);
   }
 }
 ```
@@ -34,50 +34,44 @@ With parameter decorator:
 import { onDownloadCreated, downloadItem, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class DownloadTracker {
+class DownloadMonitor {
   @onDownloadCreated()
   handleNewDownload(
     @downloadItem('id') id: number,
     @downloadItem('filename') filename: string,
-    @downloadItem('fileSize') fileSize: number
+    @downloadItem('url') url: string,
+    @downloadItem('mime') mimeType: string
   ) {
-    console.log(`Download #${id} started: ${filename} (${this.formatSize(fileSize)})`);
-  }
-  
-  private formatSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1048576) return `${(bytes / 1024).toFixed(2)} KB`;
-    return `${(bytes / 1048576).toFixed(2)} MB`;
+    console.log(`Download #${id} started: ${filename}`);
+    console.log(`From URL: ${url}`);
+    console.log(`MIME type: ${mimeType}`);
   }
 }
 ```
 
 ### onDownloadChanged
 
-This decorator handles events that fire when a download's state changes.
+This decorator handles events that fire when a download is updated.
 
 ```typescript
 import { onDownloadChanged, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class DownloadTracker {
+class DownloadMonitor {
   @onDownloadChanged()
-  handleDownloadUpdate(arg: { downloadDelta: any }) {
-    console.log(`Download updated: ID ${arg.downloadDelta.id}`);
+  handleDownloadChange(downloadDelta: browser.Downloads.OnChangedDownloadDeltaType) {
+    console.log(`Download #${downloadDelta.id} was changed`);
     
-    // Check what changed
-    if (arg.downloadDelta.state) {
-      console.log(`New state: ${arg.downloadDelta.state.current}`);
-      
-      if (arg.downloadDelta.state.current === 'complete') {
-        console.log('Download completed!');
-      } else if (arg.downloadDelta.state.current === 'interrupted') {
-        console.log(`Download interrupted: ${arg.downloadDelta.error?.current}`);
-      }
+    if (downloadDelta.state) {
+      console.log(`State changed to: ${downloadDelta.state.current}`);
     }
     
-    if (arg.downloadDelta.paused) {
-      console.log(`Paused state changed to: ${arg.downloadDelta.paused.current}`);
+    if (downloadDelta.paused) {
+      console.log(`Paused state changed to: ${downloadDelta.paused.current}`);
+    }
+    
+    if (downloadDelta.error) {
+      console.log(`Error: ${downloadDelta.error.current}`);
     }
   }
 }
@@ -89,70 +83,49 @@ With parameter decorator:
 import { onDownloadChanged, downloadDelta, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class DownloadTracker {
+class DownloadMonitor {
   @onDownloadChanged()
-  handleStateChange(
+  handleDownloadChange(
     @downloadDelta('id') id: number,
-    @downloadDelta('state') state: { current: string, previous: string }
+    @downloadDelta('state') state: { current: string; previous: string } | undefined,
+    @downloadDelta('totalBytes') bytes: { current: number; previous: number } | undefined
   ) {
-    if (state && state.current !== state.previous) {
-      console.log(`Download #${id} changed from "${state.previous}" to "${state.current}"`);
-      
-      if (state.current === 'complete') {
-        this.notifyDownloadComplete(id);
-      }
+    console.log(`Download #${id} was changed`);
+    
+    if (state) {
+      console.log(`State changed from ${state.previous} to ${state.current}`);
     }
-  }
-  
-  private notifyDownloadComplete(id: number) {
-    // Notify the user that the download is complete
+    
+    if (bytes) {
+      console.log(`Total bytes changed from ${bytes.previous} to ${bytes.current}`);
+    }
   }
 }
 ```
 
 ### onDownloadErased
 
-This decorator handles events that fire when a download is erased from browser history.
+This decorator handles events that fire when a download is erased from history.
 
 ```typescript
 import { onDownloadErased, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class DownloadTracker {
+class DownloadMonitor {
   @onDownloadErased()
-  handleDownloadErased(arg: { downloadId: number }) {
-    console.log(`Download erased: ID ${arg.downloadId}`);
-    this.cleanupDownloadData(arg.downloadId);
+  handleDownloadErasure(downloadId: number) {
+    console.log(`Download #${downloadId} was erased from history`);
+    // Clean up any references to this download in your extension
+    this.removeDownloadReference(downloadId);
   }
   
-  private cleanupDownloadData(id: number) {
-    // Remove any stored data related to this download
-  }
-}
-```
-
-With parameter decorator:
-
-```typescript
-import { onDownloadErased, downloadId, InjectableService } from 'deco-ext';
-
-@InjectableService()
-class DownloadTracker {
-  @onDownloadErased()
-  handleDownloadErased(@downloadId() id: number) {
-    console.log(`Download #${id} was erased from history`);
-    this.removeFromDatabase(id);
-  }
-  
-  private removeFromDatabase(id: number) {
-    // Remove the download from your extension's database
+  private removeDownloadReference(id: number) {
+    // Custom cleanup logic
   }
 }
 ```
 
 ## Parameter Decorators
-
-The Downloads API provides parameter decorators for each event type:
 
 ### downloadItem
 
@@ -162,24 +135,28 @@ Used with `onDownloadCreated` to extract specific properties from the download i
 import { onDownloadCreated, downloadItem, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class DownloadAnalytics {
+class DownloadLogger {
   @onDownloadCreated()
-  trackDownload(
-    @downloadItem('url') url: string,
+  logNewDownload(
+    @downloadItem('id') id: number,
     @downloadItem('filename') filename: string,
+    @downloadItem('url') url: string,
     @downloadItem('mime') mimeType: string,
-    @downloadItem('startTime') startTime: string
+    @downloadItem('startTime') startTime: string,
+    @downloadItem('totalBytes') totalBytes: number
   ) {
-    const fileExt = filename.split('.').pop().toLowerCase();
-    console.log(`New download: ${fileExt} file (${mimeType})`);
-    console.log(`Started at: ${new Date(startTime).toLocaleString()}`);
+    console.log(`Download #${id}: ${filename}`);
+    console.log(`Started at: ${startTime}`);
+    console.log(`Source: ${url}`);
+    console.log(`MIME type: ${mimeType}`);
+    console.log(`Size: ${totalBytes} bytes`);
   }
 }
 ```
 
 ### downloadDelta
 
-Used with `onDownloadChanged` to extract specific properties from the download delta:
+Used with `onDownloadChanged` to extract specific properties from the download delta object:
 
 ```typescript
 import { onDownloadChanged, downloadDelta, InjectableService } from 'deco-ext';
@@ -189,67 +166,56 @@ class DownloadProgressTracker {
   @onDownloadChanged()
   trackProgress(
     @downloadDelta('id') id: number,
-    @downloadDelta('bytesReceived') bytesReceived: { current: number, previous: number }
+    @downloadDelta('state') state: { current: string; previous: string } | undefined,
+    @downloadDelta('percentComplete') percent: { current: number; previous: number } | undefined
   ) {
-    if (bytesReceived) {
-      const downloadedBytes = bytesReceived.current - bytesReceived.previous;
-      console.log(`Download #${id}: Received ${downloadedBytes} bytes`);
+    if (state && state.current === 'in_progress') {
+      if (percent) {
+        console.log(`Download #${id} progress: ${percent.current}%`);
+      }
+    } else if (state && state.current === 'complete') {
+      console.log(`Download #${id} finished!`);
     }
   }
 }
 ```
 
-### downloadId
+## Download Objects
 
-Used with `onDownloadErased` to get the download ID:
+### DownloadItem
 
-```typescript
-import { onDownloadErased, downloadId, InjectableService } from 'deco-ext';
+The `DownloadItem` object provided to `onDownloadCreated` typically includes:
 
-@InjectableService()
-class DownloadCleanup {
-  @onDownloadErased()
-  cleanupDownload(@downloadId() id: number) {
-    console.log(`Cleaning up after erased download #${id}`);
-  }
-}
-```
+- `id`: The identifier for the download
+- `url`: The URL of the downloaded file
+- `filename`: The filename of the downloaded file
+- `mime`: The MIME type of the downloaded file
+- `startTime`: The time when the download began
+- `endTime`: The time when the download ended (if it's complete)
+- `state`: The download state (e.g., "in_progress", "interrupted", "complete")
+- `fileSize`: The size of the file in bytes
+- `exists`: Whether the downloaded file still exists
+- `byExtensionId`: The ID of the extension that initiated the download (if applicable)
+- `byExtensionName`: The name of the extension that initiated the download (if applicable)
 
-## Download States
+### OnChangedDownloadDeltaType
 
-Downloads can have the following states:
+The `OnChangedDownloadDeltaType` object provided to `onDownloadChanged` includes:
 
-- `'in_progress'`: The download is in progress
-- `'interrupted'`: The download has been interrupted
-- `'complete'`: The download has completed successfully
-
-## Working with Downloads Programmatically
-
-In addition to tracking downloads, you can use the browser.downloads API to:
-
-```typescript
-// Start a new download
-const downloadId = await browser.downloads.download({
-  url: 'https://example.com/file.zip',
-  filename: 'my-file.zip', // Optional: Suggest a filename
-  saveAs: true // Optional: Show "Save As" dialog
-});
-
-// Pause a download
-await browser.downloads.pause(downloadId);
-
-// Resume a download
-await browser.downloads.resume(downloadId);
-
-// Cancel a download
-await browser.downloads.cancel(downloadId);
-
-// Get information about a download
-const downloadItem = await browser.downloads.search({ id: downloadId });
-
-// Open the downloads folder
-await browser.downloads.showDefaultFolder();
-```
+- `id`: The identifier for the download
+- Various optional properties representing changes, each containing `current` and `previous` values:
+  - `state`: The download state
+  - `paused`: Whether the download is paused
+  - `error`: Any error that occurred
+  - `totalBytes`: Total bytes of the download
+  - `fileSize`: Size of the file in bytes
+  - `exists`: Whether the file exists
+  - `filename`: The filename
+  - `mime`: The MIME type
+  - `estimatedEndTime`: The estimated completion time
+  - `dangerType`: Any security risks associated with the file
+  - `url`: The download URL
+  - `finalUrl`: The final URL after redirects
 
 ## Implementation Details
 

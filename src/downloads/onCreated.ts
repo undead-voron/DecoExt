@@ -1,55 +1,22 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { downloadItem: browser.Downloads.DownloadItem }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((downloadItem: browser.Downloads.DownloadItem) => unknown)
 
-const listeners = new Set<(arg: { downloadItem: browser.Downloads.DownloadItem }) => Promise<void>>()
+const listeners = new Set<(downloadItem: browser.Downloads.DownloadItem) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.downloads.onCreated.addListener((downloadItem) => {
     for (const listener of listeners)
-      listener({ downloadItem })
+      listener(downloadItem)
   })
 })
 
-const downloadItemDecoratorInfo = createDecorator<keyof browser.Downloads.DownloadItem | void>('downloadItem')
+const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.Downloads.DownloadItem, AllowedListener>('downloadItem')
 
-export const downloadItem = downloadItemDecoratorInfo.decorator
-
-// map onCreated data to parameter decorators
-function decoratorsHandler(arg: { downloadItem: browser.Downloads.DownloadItem }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingDownloadItemParameters: { index: number, key?: keyof browser.Downloads.DownloadItem }[] = Reflect.getOwnMetadata(downloadItemDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingDownloadItemParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingDownloadItemParameters) {
-      customArg[index] = key ? arg.downloadItem[key] : arg.downloadItem
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { downloadItem: browser.Downloads.DownloadItem }): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
-  }
-}
+export const downloadItem = decorator
 
 /**
  * @overview

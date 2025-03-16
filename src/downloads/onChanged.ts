@@ -1,56 +1,23 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
 // Use any for the download delta type to avoid type issues
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { downloadDelta: any }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((downloadDelta: browser.Downloads.OnChangedDownloadDeltaType) => unknown)
 
-const listeners = new Set<(arg: { downloadDelta: any }) => Promise<void>>()
+const listeners = new Set<(downloadDelta: browser.Downloads.OnChangedDownloadDeltaType) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.downloads.onChanged.addListener((downloadDelta) => {
     for (const listener of listeners)
-      listener({ downloadDelta })
+      listener(downloadDelta)
   })
 })
 
-const downloadDeltaDecoratorInfo = createDecorator<string | void>('downloadDelta')
+const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.Downloads.OnChangedDownloadDeltaType, AllowedListener>('downloadDelta')
 
-export const downloadDelta = downloadDeltaDecoratorInfo.decorator
-
-// map onChanged data to parameter decorators
-function decoratorsHandler(arg: { downloadDelta: any }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingDownloadDeltaParameters: { index: number, key?: string }[] = Reflect.getOwnMetadata(downloadDeltaDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingDownloadDeltaParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingDownloadDeltaParameters) {
-      customArg[index] = key ? arg.downloadDelta[key] : arg.downloadDelta
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { downloadDelta: any }): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
-  }
-}
+export const downloadDelta = decorator
 
 /**
  * @overview
