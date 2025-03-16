@@ -106,14 +106,14 @@ class ExtensionMonitor {
 With parameter decorator:
 
 ```typescript
-import { onExtensionEnabled, enabledExtensionInfo, InjectableService } from 'deco-ext';
+import { onExtensionEnabled, extensionInfo, InjectableService } from 'deco-ext';
 
 @InjectableService()
 class ExtensionMonitor {
   @onExtensionEnabled()
   handleEnabled(
-    @enabledExtensionInfo('id') id: string,
-    @enabledExtensionInfo('name') name: string
+    @extensionInfo('id') id: string,
+    @extensionInfo('name') name: string
   ) {
     console.log(`Extension enabled: ${name} (${id})`);
   }
@@ -140,14 +140,14 @@ class ExtensionMonitor {
 With parameter decorator:
 
 ```typescript
-import { onExtensionDisabled, disabledExtensionInfo, InjectableService } from 'deco-ext';
+import { onExtensionDisabled, extensionInfo, InjectableService } from 'deco-ext';
 
 @InjectableService()
 class ExtensionMonitor {
   @onExtensionDisabled()
   handleDisabled(
-    @disabledExtensionInfo('id') id: string,
-    @disabledExtensionInfo('name') name: string
+    @extensionInfo('id') id: string,
+    @extensionInfo('name') name: string
   ) {
     console.log(`Extension disabled: ${name} (${id})`);
   }
@@ -156,11 +156,11 @@ class ExtensionMonitor {
 
 ## Parameter Decorators
 
-Each method decorator has a corresponding parameter decorator that can be used to extract specific properties:
+The Management API provides parameter decorators for specific event types:
 
 ### extensionInfo
 
-Used with `onExtensionInstalled` to extract specific properties from the extension info object:
+Used with `onExtensionInstalled`, `onExtensionEnabled`, and `onExtensionDisabled` to extract specific properties from the extension info object:
 
 ```typescript
 import { onExtensionInstalled, extensionInfo, InjectableService } from 'deco-ext';
@@ -183,14 +183,6 @@ class ExtensionDetails {
   }
 }
 ```
-
-### enabledExtensionInfo
-
-Used with `onExtensionEnabled` to extract specific properties from the extension info object.
-
-### disabledExtensionInfo
-
-Used with `onExtensionDisabled` to extract specific properties from the extension info object.
 
 ### extensionId
 
