@@ -49,4 +49,3 @@ export function onReferenceFragmentUpdated<T extends AllowedListener>() {
     listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
   }
 }
-

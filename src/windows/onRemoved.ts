@@ -1,6 +1,5 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
 import container from '../injectablesContainer'
 import { resolve } from '../instanceResolver'

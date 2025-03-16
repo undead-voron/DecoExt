@@ -1,9 +1,9 @@
 import browser from 'webextension-polyfill'
 
 import container from '~/injectablesContainer'
-import {resolve} from '~/instanceResolver'
+import { resolve } from '~/instanceResolver'
 import { callOnce } from '~/utils'
-import { key as extensionInfoKey } from './sharedParametersDecorator';
+import { key as extensionInfoKey } from './sharedParametersDecorator'
 
 type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((info: browser.Management.ExtensionInfo) => unknown)
 

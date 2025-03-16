@@ -14,7 +14,7 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper('navigationErrorDetails')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper('navigationErrorDetails')
 
 export const navigationErrorDetails = decorator
 /*

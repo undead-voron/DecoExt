@@ -14,7 +14,7 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.Downloads.DownloadItem, AllowedListener>('downloadItem')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.Downloads.DownloadItem, AllowedListener>('downloadItem')
 
 export const downloadItem = decorator
 

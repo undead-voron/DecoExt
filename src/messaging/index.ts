@@ -38,14 +38,12 @@ function listenerWrapper<T extends DataTypeKey>(targetClass: any, method: TypedA
 }
 
 const createInitialListener = callOnce(() => {
-  browser.runtime.onMessage.addListener(async (details, sender) => {
-    // @ts-expect-error fast check for valid format
-    const name: string | undefined = details?.name
+  browser.runtime.onMessage.addListener(async (details: unknown, sender: browser.Runtime.MessageSender) => {
+    const name: string | undefined = (details as { name?: string })?.name
     if (name) {
       const listener = listeners.get(name as DataTypeKey)
       if (listener) {
-        // @ts-expect-error should be fine if 'name' already exists as property on 'details'
-        return listener({ data: details.data, sender })
+        return listener({ data: (details as { data?: any })?.data, sender })
       }
     }
   })
@@ -56,12 +54,13 @@ const createInitialListener = callOnce(() => {
  *
  * Add listener for message by name
  */
-export function onMessage<K extends DataTypeKey, T extends (...args: any[]) => GetReturnType<K>>({ name }: { name: K }) {
+export function onMessage<K extends DataTypeKey, T extends (...args: any[]) => GetReturnType<K>>({ key }: { key: K }) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => {
-    const eventKey = name
-    if (!eventKey || typeof eventKey === 'symbol')
+    const eventKey = key
+    if (!eventKey || typeof eventKey === 'symbol') {
       throw new Error('method key must be a string or a custom key must be provided')
+    }
 
     // TODO: throw error if listener already exists
     listeners.set(eventKey, listenerWrapper(target, descriptor.value as T, propertyKey))

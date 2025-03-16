@@ -1,4 +1,4 @@
-import type { JsonValue, Jsonify } from 'type-fest'
+import type { Jsonify, JsonValue } from 'type-fest'
 
 declare const ProtocolWithReturnSymbol: unique symbol
 

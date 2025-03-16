@@ -18,7 +18,6 @@ const { listenerWrapper, decorator } = buildDecoratorAndMethodWrapper<browser.Ru
 
 export const installedDetails = decorator
 
-
 /**
  * @overview
  *
@@ -30,10 +29,10 @@ export const installedDetails = decorator
  * Method is called with parameter that contains 'details' property with the interface matching browser.Runtime.OnInstalledDetailsType type.
  */
 export function onInstalled<T extends AllowedListener>(
-  arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'>> = {},
+  _arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'>> = {},
 ) {
   createInitialListener()
-  return (target: any, _propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target.constructor, descriptor.value as T, arg))
+  return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
   }
 }

@@ -1,9 +1,6 @@
 import browser from 'webextension-polyfill'
-import { buildDecoratorAndMethodWrapper, createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
 type AllowedListener =
   ((...args: any[]) => any) |
@@ -19,7 +16,7 @@ const createInitialListener = callOnce(() => {
     }
   })
 })
-const {decorator, listenerWrapper} = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnHistoryStateUpdatedDetailsType , AllowedListener>('onHistoryStateUpdatedDetails')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnHistoryStateUpdatedDetailsType, AllowedListener>('onHistoryStateUpdatedDetails')
 
 export const historyStateUpdatedDetails = decorator
 
