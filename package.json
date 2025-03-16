@@ -40,7 +40,8 @@
     "ci:bump-version": "pnpm version minor",
     "ci:patch-version": "pnpm version patch",
     "ci:bump-version-major": "pnpm version major",
-    "docs": "pnpm --filter docs"
+    "docs": "pnpm --filter docs",
+    "playground": "pnpm --filter playground-extension"
   },
   "dependencies": {
     "reflect-metadata": "^0.2.2",
