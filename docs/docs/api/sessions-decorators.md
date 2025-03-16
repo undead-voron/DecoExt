@@ -83,6 +83,3 @@ class SessionService {
   }
 }
 ```
-```
-
-This documentation accurately reflects the simple nature of the Sessions API decorator and provides a clear explanation of how to use it, despite the lack of parameters or parameter decorators. 
