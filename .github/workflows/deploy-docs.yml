@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: pnpm i
       - name: Build website
-        run: cd docs && npm run build
+        run: cd docs && npm run build && cd ..
 
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3

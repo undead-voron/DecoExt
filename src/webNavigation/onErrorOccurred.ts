@@ -5,16 +5,16 @@ import { callOnce } from '~/utils'
 
 type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { details: browser.WebNavigation.OnErrorOccurredDetailsType }) => unknown)
 
-const listeners = new Set<(arg: { details: browser.WebNavigation.OnErrorOccurredDetailsType }) => Promise<void>>()
+const listeners = new Set<(details: browser.WebNavigation.OnErrorOccurredDetailsType) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.webNavigation.onErrorOccurred.addListener((details) => {
     for (const listener of listeners)
-      listener({ details })
+      listener(details)
   })
 })
 
-const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper('navigationErrorDetails')
+const { decorator, listenerWrapper } = buildDecoratorAndMethodWrapper<browser.WebNavigation.OnErrorOccurredDetailsType, AllowedListener>('navigationErrorDetails')
 
 export const navigationErrorDetails = decorator
 /*
