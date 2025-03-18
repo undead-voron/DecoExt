@@ -4,23 +4,30 @@ title: Web Navigation Decorators
 
 # Web Navigation Decorators
 
-The Web Navigation decorators allow you to easily respond to browser navigation events in your extension services. These decorators provide a clean way to handle various stages of page navigation.
+The Web Navigation decorators allow you to easily respond to browser navigation events in your extension services. These decorators provide a clean way to monitor and respond to page navigation, loading states, and errors.
 
 ## Method Decorators
 
 ### onBeforeNavigate
 
-This decorator handles events that fire when navigation is about to occur.
+This decorator handles events that fire before a navigation event begins.
 
 ```typescript
 import { onBeforeNavigate, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class NavigationTracker {
   @onBeforeNavigate()
-  handleBeforeNavigate(details: browser.WebNavigation.OnBeforeNavigateDetailsType) {
-    console.log('Navigation starting to:', details.url);
-    console.log('In tab:', details.tabId);
+  handleNavigation(details: browser.WebNavigation.OnBeforeNavigateDetailsType) {
+    console.log(`Navigation starting for tab ${details.tabId}`);
+    console.log(`Navigating to: ${details.url}`);
+    
+    // Track or respond to the new navigation
+    this.logNavigation(details.url, details.tabId);
+  }
+  
+  private logNavigation(url: string, tabId: number) {
+    // Log navigation or perform other actions
   }
 }
 ```
@@ -31,14 +38,24 @@ With parameter decorator:
 import { onBeforeNavigate, navigationDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class NavigationMonitor {
   @onBeforeNavigate()
-  logNavigation(
-    @navigationDetails('url') url: string,
+  trackNavigation(
     @navigationDetails('tabId') tabId: number,
-    @navigationDetails('timeStamp') time: number
+    @navigationDetails('url') url: string,
+    @navigationDetails('frameId') frameId: number
   ) {
-    console.log(`Navigation to ${url} in tab ${tabId} at ${new Date(time).toLocaleString()}`);
+    if (frameId === 0) {
+      console.log(`Main frame navigation in tab ${tabId}`);
+      console.log(`Navigating to: ${url}`);
+      this.analyzeNavigation(url);
+    } else {
+      console.log(`Subframe navigation to ${url}`);
+    }
+  }
+  
+  private analyzeNavigation(url: string) {
+    // Analyze the navigation target
   }
 }
 ```
@@ -51,11 +68,17 @@ This decorator handles events that fire when a navigation is committed.
 import { onNavigationCommitted, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class NavigationMonitor {
   @onNavigationCommitted()
   handleCommitted(details: browser.WebNavigation.OnCommittedDetailsType) {
-    console.log('Navigation committed to:', details.url);
-    console.log('Transition type:', details.transitionType);
+    console.log(`Navigation committed in tab ${details.tabId}`);
+    console.log(`URL: ${details.url}`);
+    console.log(`Transition type: ${details.transitionType}`);
+    
+    // Respond to committed navigation
+    if (details.transitionType === 'typed') {
+      console.log('User typed this URL directly');
+    }
   }
 }
 ```
@@ -66,14 +89,20 @@ With parameter decorator:
 import { onNavigationCommitted, navigationCommittedDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class NavigationMonitor {
   @onNavigationCommitted()
-  handleCommitted(
+  trackCommitted(
+    @navigationCommittedDetails('tabId') tabId: number,
     @navigationCommittedDetails('url') url: string,
-    @navigationCommittedDetails('transitionType') transitionType: string
+    @navigationCommittedDetails('transitionType') transitionType: string,
+    @navigationCommittedDetails('transitionQualifiers') qualifiers: string[]
   ) {
-    console.log(`Navigation committed to: ${url}`);
-    console.log(`Transition type: ${transitionType}`);
+    console.log(`Tab ${tabId} navigation committed to ${url}`);
+    console.log(`Transition: ${transitionType}`);
+    
+    if (qualifiers.includes('from_address_bar')) {
+      console.log('Navigation originated from address bar');
+    }
   }
 }
 ```
@@ -86,10 +115,18 @@ This decorator handles events that fire when a navigation is completed.
 import { onNavigationCompleted, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class PageLoadTracker {
   @onNavigationCompleted()
-  handleCompleted(details: browser.WebNavigation.OnCompletedDetailsType) {
-    console.log('Navigation completed to:', details.url);
+  handleComplete(details: browser.WebNavigation.OnCompletedDetailsType) {
+    console.log(`Navigation completed in tab ${details.tabId}`);
+    console.log(`Loaded: ${details.url}`);
+    
+    // Perform actions after navigation completes
+    this.analyzePage(details.tabId, details.url);
+  }
+  
+  private analyzePage(tabId: number, url: string) {
+    // Analyze the loaded page
   }
 }
 ```
@@ -100,29 +137,41 @@ With parameter decorator:
 import { onNavigationCompleted, navigationCompletedDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class PageLoadTracker {
   @onNavigationCompleted()
-  handleCompleted(
+  trackCompletion(
+    @navigationCompletedDetails('tabId') tabId: number,
     @navigationCompletedDetails('url') url: string,
-    @navigationCompletedDetails('tabId') tabId: number
+    @navigationCompletedDetails('frameId') frameId: number,
+    @navigationCompletedDetails('timeStamp') timestamp: number
   ) {
-    console.log(`Navigation completed to ${url} in tab ${tabId}`);
+    const loadTime = new Date(timestamp).toLocaleTimeString();
+    console.log(`Tab ${tabId} frame ${frameId} completed loading ${url} at ${loadTime}`);
   }
 }
 ```
 
 ### onDOMContentLoaded
 
-This decorator handles events that fire when the DOM content of a page has been loaded.
+This decorator handles events that fire when the DOM content of a page is loaded.
 
 ```typescript
 import { onDOMContentLoaded, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class DOMLoadMonitor {
   @onDOMContentLoaded()
-  handleDOMContentLoaded(details: browser.WebNavigation.OnDOMContentLoadedDetailsType) {
-    console.log('DOM content loaded for:', details.url);
+  handleDOMLoaded(details: browser.WebNavigation.OnDOMContentLoadedDetailsType) {
+    console.log(`DOM loaded in tab ${details.tabId}`);
+    console.log(`URL: ${details.url}`);
+    console.log(`Time: ${new Date(details.timeStamp).toLocaleTimeString()}`);
+    
+    // Respond to DOM content loaded event
+    this.injectContentIfNeeded(details.tabId, details.url);
+  }
+  
+  private injectContentIfNeeded(tabId: number, url: string) {
+    // Potentially inject content scripts or perform other actions
   }
 }
 ```
@@ -133,13 +182,25 @@ With parameter decorator:
 import { onDOMContentLoaded, domContentLoadedDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class DOMLoadMonitor {
   @onDOMContentLoaded()
-  handleDOMContentLoaded(
+  trackDOMLoad(
+    @domContentLoadedDetails('tabId') tabId: number,
     @domContentLoadedDetails('url') url: string,
     @domContentLoadedDetails('frameId') frameId: number
   ) {
-    console.log(`DOM content loaded for ${url} in frame ${frameId}`);
+    if (frameId === 0) {
+      console.log(`Main document DOM loaded in tab ${tabId}`);
+      console.log(`URL: ${url}`);
+      
+      if (url.includes('example.com')) {
+        this.enhancePage(tabId);
+      }
+    }
+  }
+  
+  private enhancePage(tabId: number) {
+    // Enhance the page after DOM is loaded
   }
 }
 ```
@@ -152,11 +213,19 @@ This decorator handles events that fire when a navigation fails due to an error.
 import { onNavigationError, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class NavigationErrorHandler {
   @onNavigationError()
-  handleError(arg: { details: browser.WebNavigation.OnErrorOccurredDetailsType }) {
-    console.log('Navigation error for:', arg.details.url);
-    console.log('Error:', arg.details.error);
+  handleError(details: browser.WebNavigation.OnErrorOccurredDetailsType) {
+    console.log(`Navigation error in tab ${details.tabId}`);
+    console.log(`Failed URL: ${details.url}`);
+    console.log(`Error: ${details.error}`);
+    
+    // Handle the navigation error
+    this.logNavigationError(details.tabId, details.url, details.error);
+  }
+  
+  private logNavigationError(tabId: number, url: string, error: string) {
+    // Log error or notify user
   }
 }
 ```
@@ -167,30 +236,50 @@ With parameter decorator:
 import { onNavigationError, navigationErrorDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class NavigationErrorHandler {
   @onNavigationError()
-  handleError(
+  trackErrors(
+    @navigationErrorDetails('tabId') tabId: number,
     @navigationErrorDetails('url') url: string,
-    @navigationErrorDetails('error') error: string
+    @navigationErrorDetails('error') error: string,
+    @navigationErrorDetails('frameId') frameId: number
   ) {
-    console.log(`Navigation error for ${url}: ${error}`);
+    if (frameId === 0) {
+      console.log(`Main frame navigation error in tab ${tabId}`);
+      console.log(`Failed URL: ${url}`);
+      console.log(`Error: ${error}`);
+      
+      // Provide fallback content or suggest alternatives
+      this.suggestAlternatives(tabId, url, error);
+    }
+  }
+  
+  private suggestAlternatives(tabId: number, url: string, error: string) {
+    // Suggest alternative actions based on the error
   }
 }
 ```
 
 ### onHistoryStateUpdated
 
-This decorator handles events that fire when the page's history state is updated (e.g., via pushState/replaceState).
+This decorator handles events that fire when the page's history state is updated (pushState/replaceState).
 
 ```typescript
 import { onHistoryStateUpdated, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class SPANavigationTracker {
   @onHistoryStateUpdated()
   handleHistoryUpdate(details: browser.WebNavigation.OnHistoryStateUpdatedDetailsType) {
-    console.log('History state updated for:', details.url);
-    console.log('Transition type:', details.transitionType);
+    console.log(`History state updated in tab ${details.tabId}`);
+    console.log(`New URL: ${details.url}`);
+    
+    // Track single-page app navigation
+    this.trackSPANavigation(details.tabId, details.url);
+  }
+  
+  private trackSPANavigation(tabId: number, url: string) {
+    // Track single-page application navigation changes
   }
 }
 ```
@@ -201,30 +290,50 @@ With parameter decorator:
 import { onHistoryStateUpdated, historyStateUpdatedDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class SPANavigationTracker {
   @onHistoryStateUpdated()
-  handleHistoryUpdate(
+  trackHistoryChanges(
+    @historyStateUpdatedDetails('tabId') tabId: number,
     @historyStateUpdatedDetails('url') url: string,
     @historyStateUpdatedDetails('transitionType') transitionType: string
   ) {
-    console.log(`History state updated for ${url}`);
+    console.log(`SPA navigation in tab ${tabId}`);
+    console.log(`New virtual page: ${url}`);
     console.log(`Transition type: ${transitionType}`);
+    
+    // Update analytics or other tracking
+    this.recordVirtualPageview(url);
+  }
+  
+  private recordVirtualPageview(url: string) {
+    // Record SPA virtual pageview
   }
 }
 ```
 
 ### onReferenceFragmentUpdated
 
-This decorator handles events that fire when the fragment identifier of a URL changes (the part after the '#').
+This decorator handles events that fire when the URL fragment (part after #) changes.
 
 ```typescript
 import { onReferenceFragmentUpdated, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class FragmentTracker {
   @onReferenceFragmentUpdated()
-  handleFragmentUpdate(details: browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType) {
-    console.log('Fragment updated for:', details.url);
+  handleFragmentChange(details: browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType) {
+    console.log(`URL fragment changed in tab ${details.tabId}`);
+    console.log(`URL with new fragment: ${details.url}`);
+    
+    // Extract and use the fragment
+    const fragment = new URL(details.url).hash;
+    console.log(`Fragment: ${fragment}`);
+    
+    this.respondToFragmentChange(details.tabId, fragment);
+  }
+  
+  private respondToFragmentChange(tabId: number, fragment: string) {
+    // Respond to fragment change (e.g., for in-page navigation)
   }
 }
 ```
@@ -235,29 +344,49 @@ With parameter decorator:
 import { onReferenceFragmentUpdated, referenceFragmentUpdatedDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class FragmentTracker {
   @onReferenceFragmentUpdated()
-  handleFragmentUpdate(
+  trackFragmentChanges(
+    @referenceFragmentUpdatedDetails('tabId') tabId: number,
     @referenceFragmentUpdatedDetails('url') url: string,
-    @referenceFragmentUpdatedDetails('tabId') tabId: number
+    @referenceFragmentUpdatedDetails('timeStamp') time: number
   ) {
-    console.log(`Fragment updated for ${url} in tab ${tabId}`);
+    const fragment = new URL(url).hash.substring(1); // Remove the # character
+    
+    console.log(`Tab ${tabId} changed fragment to: ${fragment}`);
+    console.log(`At time: ${new Date(time).toLocaleTimeString()}`);
+    
+    // Track fragment-based navigation
+    this.logFragmentNavigation(fragment);
+  }
+  
+  private logFragmentNavigation(fragment: string) {
+    // Log or respond to fragment-based navigation
   }
 }
 ```
 
 ### onTabReplaced
 
-This decorator handles events that fire when the contents of a tab is replaced by a different (usually previously pre-rendered) tab.
+This decorator handles events that fire when a tab is replaced by another tab.
 
 ```typescript
 import { onTabReplaced, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class TabReplacementTracker {
   @onTabReplaced()
-  handleTabReplaced(details: browser.WebNavigation.OnTabReplacedDetailsType) {
-    console.log(`Tab ${details.replacedTabId} was replaced by tab ${details.tabId}`);
+  handleTabReplacement(details: browser.WebNavigation.OnTabReplacedDetailsType) {
+    console.log(`Tab replacement occurred`);
+    console.log(`Replaced tab ID: ${details.replacedTabId}`);
+    console.log(`New tab ID: ${details.tabId}`);
+    
+    // Update any tab tracking
+    this.updateTabReferences(details.replacedTabId, details.tabId);
+  }
+  
+  private updateTabReferences(oldTabId: number, newTabId: number) {
+    // Update any data structures that reference the old tab ID
   }
 }
 ```
@@ -268,50 +397,208 @@ With parameter decorator:
 import { onTabReplaced, tabReplacedDetails, InjectableService } from 'deco-ext';
 
 @InjectableService()
-class NavigationService {
+class TabReplacementTracker {
   @onTabReplaced()
-  handleReplacement(
+  trackTabReplacement(
     @tabReplacedDetails('replacedTabId') oldTabId: number,
-    @tabReplacedDetails('tabId') newTabId: number
+    @tabReplacedDetails('tabId') newTabId: number,
+    @tabReplacedDetails('timeStamp') time: number
   ) {
     console.log(`Tab ${oldTabId} was replaced by tab ${newTabId}`);
+    console.log(`At time: ${new Date(time).toLocaleTimeString()}`);
+    
+    // Transfer any tab-specific state
+    this.transferTabState(oldTabId, newTabId);
+  }
+  
+  private transferTabState(oldTabId: number, newTabId: number) {
+    // Transfer any state or tracking from old tab to new tab
   }
 }
 ```
 
 ## Parameter Decorators
 
-Each method decorator has a corresponding parameter decorator that can be used to extract specific properties from the navigation details:
+### navigationDetails
 
-| Method Decorator | Parameter Decorator | Used With |
-|------------------|-------------------|-----------|
-| `onBeforeNavigate` | `navigationDetails` | `browser.WebNavigation.OnBeforeNavigateDetailsType` |
-| `onNavigationCommitted` | `navigationCommittedDetails` | `browser.WebNavigation.OnCommittedDetailsType` |
-| `onNavigationCompleted` | `navigationCompletedDetails` | `browser.WebNavigation.OnCompletedDetailsType` |
-| `onDOMContentLoaded` | `domContentLoadedDetails` | `browser.WebNavigation.OnDOMContentLoadedDetailsType` |
-| `onNavigationError` | `navigationErrorDetails` | `browser.WebNavigation.OnErrorOccurredDetailsType` |
-| `onHistoryStateUpdated` | `historyStateUpdatedDetails` | `browser.WebNavigation.OnHistoryStateUpdatedDetailsType` |
-| `onReferenceFragmentUpdated` | `referenceFragmentUpdatedDetails` | `browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType` |
-| `onTabReplaced` | `tabReplacedDetails` | `browser.WebNavigation.OnTabReplacedDetailsType` |
+Used with `onBeforeNavigate` to extract specific properties from the navigation details:
 
-## Common Detail Properties
+```typescript
+import { onBeforeNavigate, navigationDetails, InjectableService } from 'deco-ext';
 
-Most navigation events include these common properties:
+@InjectableService()
+class NavigationTracker {
+  @onBeforeNavigate()
+  trackNavigation(
+    @navigationDetails('tabId') tabId: number,
+    @navigationDetails('url') url: string,
+    @navigationDetails('frameId') frameId: number,
+    @navigationDetails('timeStamp') timestamp: number
+  ) {
+    const navTime = new Date(timestamp).toLocaleTimeString();
+    console.log(`Tab ${tabId} frame ${frameId} navigating to ${url} at ${navTime}`);
+  }
+}
+```
 
-- `tabId`: The ID of the tab in which the navigation occurred
-- `url`: The URL to which the navigation occurred
-- `frameId`: The ID of the frame in which the navigation occurred (0 is the main frame)
-- `timeStamp`: The time when the navigation occurred, in milliseconds since the epoch
-- `processId`: The ID of the process running the renderer for this frame
+### navigationCommittedDetails
 
-Transition-related events may also include:
+Used with `onNavigationCommitted` to extract specific properties from the committed navigation details:
 
-- `transitionType`: The type of transition (e.g., "link", "typed", "auto_bookmark")
-- `transitionQualifiers`: Array of qualifiers describing the transition
+```typescript
+import { onNavigationCommitted, navigationCommittedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class NavigationTracker {
+  @onNavigationCommitted()
+  trackCommit(
+    @navigationCommittedDetails('tabId') tabId: number,
+    @navigationCommittedDetails('url') url: string,
+    @navigationCommittedDetails('transitionType') transitionType: string,
+    @navigationCommittedDetails('transitionQualifiers') qualifiers: string[]
+  ) {
+    console.log(`Tab ${tabId} committed navigation to ${url}`);
+    console.log(`Transition: ${transitionType}`);
+    console.log(`Qualifiers: ${qualifiers.join(', ')}`);
+  }
+}
+```
+
+### navigationCompletedDetails
+
+Used with `onNavigationCompleted` to extract specific properties from the completed navigation details:
+
+```typescript
+import { onNavigationCompleted, navigationCompletedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class NavigationTracker {
+  @onNavigationCompleted()
+  trackCompletion(
+    @navigationCompletedDetails('tabId') tabId: number,
+    @navigationCompletedDetails('url') url: string,
+    @navigationCompletedDetails('frameId') frameId: number,
+    @navigationCompletedDetails('timeStamp') timestamp: number
+  ) {
+    const loadTime = new Date(timestamp).toLocaleTimeString();
+    console.log(`Tab ${tabId} frame ${frameId} completed loading ${url} at ${loadTime}`);
+  }
+}
+```
+
+### domContentLoadedDetails
+
+Used with `onDOMContentLoaded` to extract specific properties from the DOM loaded details:
+
+```typescript
+import { onDOMContentLoaded, domContentLoadedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class DOMTracker {
+  @onDOMContentLoaded()
+  trackDOMLoad(
+    @domContentLoadedDetails('tabId') tabId: number,
+    @domContentLoadedDetails('url') url: string,
+    @domContentLoadedDetails('frameId') frameId: number,
+    @domContentLoadedDetails('timeStamp') timestamp: number
+  ) {
+    const loadTime = new Date(timestamp).toLocaleTimeString();
+    console.log(`Tab ${tabId} frame ${frameId} DOM loaded for ${url} at ${loadTime}`);
+  }
+}
+```
+
+### navigationErrorDetails
+
+Used with `onNavigationError` to extract specific properties from the navigation error details:
+
+```typescript
+import { onNavigationError, navigationErrorDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class ErrorTracker {
+  @onNavigationError()
+  trackError(
+    @navigationErrorDetails('tabId') tabId: number,
+    @navigationErrorDetails('url') url: string,
+    @navigationErrorDetails('error') errorCode: string,
+    @navigationErrorDetails('timeStamp') timestamp: number
+  ) {
+    const errorTime = new Date(timestamp).toLocaleTimeString();
+    console.log(`Tab ${tabId} encountered error '${errorCode}' loading ${url} at ${errorTime}`);
+  }
+}
+```
+
+### historyStateUpdatedDetails
+
+Used with `onHistoryStateUpdated` to extract specific properties from the history state updated details:
+
+```typescript
+import { onHistoryStateUpdated, historyStateUpdatedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class SPATracker {
+  @onHistoryStateUpdated()
+  trackStateChange(
+    @historyStateUpdatedDetails('tabId') tabId: number,
+    @historyStateUpdatedDetails('url') url: string,
+    @historyStateUpdatedDetails('frameId') frameId: number,
+    @historyStateUpdatedDetails('transitionType') transitionType: string
+  ) {
+    console.log(`Tab ${tabId} frame ${frameId} history state updated to ${url}`);
+    console.log(`Transition type: ${transitionType}`);
+  }
+}
+```
+
+### referenceFragmentUpdatedDetails
+
+Used with `onReferenceFragmentUpdated` to extract specific properties from the fragment updated details:
+
+```typescript
+import { onReferenceFragmentUpdated, referenceFragmentUpdatedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class FragmentTracker {
+  @onReferenceFragmentUpdated()
+  trackFragmentChange(
+    @referenceFragmentUpdatedDetails('tabId') tabId: number,
+    @referenceFragmentUpdatedDetails('url') url: string,
+    @referenceFragmentUpdatedDetails('frameId') frameId: number,
+    @referenceFragmentUpdatedDetails('transitionType') transitionType: string
+  ) {
+    const fragment = new URL(url).hash;
+    console.log(`Tab ${tabId} frame ${frameId} fragment changed to ${fragment}`);
+    console.log(`Transition type: ${transitionType}`);
+  }
+}
+```
+
+### tabReplacedDetails
+
+Used with `onTabReplaced` to extract specific properties from the tab replaced details:
+
+```typescript
+import { onTabReplaced, tabReplacedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class TabTracker {
+  @onTabReplaced()
+  trackReplacement(
+    @tabReplacedDetails('replacedTabId') oldTabId: number,
+    @tabReplacedDetails('tabId') newTabId: number,
+    @tabReplacedDetails('timeStamp') timestamp: number
+  ) {
+    const replaceTime = new Date(timestamp).toLocaleTimeString();
+    console.log(`Tab ${oldTabId} was replaced by tab ${newTabId} at ${replaceTime}`);
+  }
+}
+```
 
 ## Implementation Details
 
-These decorators use a singleton pattern to ensure only one event listener is registered per event type, and then route events to all decorated methods. When a navigation event occurs:
+These decorators use a singleton pattern to ensure only one event listener is registered per event type, and then route events to all decorated methods. When a web navigation event occurs:
 
 1. The event is received by the single registered browser API listener
 2. The event data is passed to all registered method handlers
