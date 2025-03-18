@@ -1,9 +1,7 @@
 import browser from 'webextension-polyfill'
 
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper'
+import { buildDecoratorAndMethodWrapper } from '~/buildDecoratorAndMethodWrapper'
 import { callOnce } from '~/utils'
-import container from '../injectablesContainer'
-import { resolve } from '../instanceResolver'
 
 interface ZoomChangeInfo {
   tabId: number
@@ -12,51 +10,20 @@ interface ZoomChangeInfo {
   zoomSettings: browser.Tabs.ZoomSettings
 }
 
-type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((arg: { zoomChangeInfo: ZoomChangeInfo }) => unknown)
+type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((zoomChangeInfo: ZoomChangeInfo) => unknown)
 
-const listeners = new Set<(arg: { zoomChangeInfo: ZoomChangeInfo }) => Promise<void>>()
+const listeners = new Set<(zoomChangeInfo: ZoomChangeInfo) => Promise<void>>()
 
 const createInitialListener = callOnce(() => {
   browser.tabs.onZoomChange.addListener((zoomChangeInfo) => {
     for (const listener of listeners)
-      listener({ zoomChangeInfo })
+      listener(zoomChangeInfo)
   })
 })
 
-const zoomChangeInfoDecoratorInfo = createDecorator<keyof ZoomChangeInfo | void>('zoomChangeInfo')
+const { listenerWrapper, decorator } = buildDecoratorAndMethodWrapper<ZoomChangeInfo, AllowedListener>('zoomChangeInfo')
 
-export const zoomChangeInfo = zoomChangeInfoDecoratorInfo.decorator
-
-// map onZoomChange data to parameter decorators
-function decoratorsHandler(arg: { zoomChangeInfo: ZoomChangeInfo }, constructor: any, propertyKey: string | symbol): Array<any> {
-  const existingZoomParameters: { index: number, key?: keyof ZoomChangeInfo }[] = Reflect.getOwnMetadata(zoomChangeInfoDecoratorInfo.key, constructor, propertyKey) || []
-
-  if (existingZoomParameters.length) {
-    const customArg = []
-    for (const { index, key } of existingZoomParameters) {
-      customArg[index] = key ? arg.zoomChangeInfo[key] : arg.zoomChangeInfo
-    }
-    return customArg
-  }
-  else {
-    return [arg]
-  }
-}
-
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
-  return async (arg: { zoomChangeInfo: ZoomChangeInfo }): Promise<void> => {
-    const instanceWrapperConstructor = container.get(constructor.constructor)
-    if (!instanceWrapperConstructor)
-      throw new Error('decorator should be applied on class decorated by "Service" decorator')
-
-    const instance = resolve(instanceWrapperConstructor)
-    if (instance.init && typeof instance.init === 'function') {
-      // await instance initialization
-      await instance.init()
-    }
-    method.call(instance, ...decoratorsHandler(arg, constructor, propertyKey))
-  }
-}
+export const zoomChangeInfo = decorator
 
 /**
  * @overview

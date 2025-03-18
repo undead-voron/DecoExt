@@ -255,20 +255,17 @@ import { onTabZoomChange, InjectableService } from 'deco-ext';
 @InjectableService()
 class ZoomMonitor {
   @onTabZoomChange()
-  handleZoomChange(arg: { 
-    zoomChangeInfo: {
-      tabId: number;
-      oldZoomFactor: number;
-      newZoomFactor: number;
-      zoomSettings: browser.Tabs.ZoomSettings;
-    }
+  handleZoomChange(zoomChangeInfo: {
+    tabId: number;
+    oldZoomFactor: number;
+    newZoomFactor: number;
+    zoomSettings: browser.Tabs.ZoomSettings;
   }) {
-    const info = arg.zoomChangeInfo;
-    console.log(`Zoom changed for tab ${info.tabId}`);
-    console.log(`Zoom factor changed from ${info.oldZoomFactor} to ${info.newZoomFactor}`);
+    console.log(`Zoom changed for tab ${zoomChangeInfo.tabId}`);
+    console.log(`Zoom factor changed from ${zoomChangeInfo.oldZoomFactor} to ${zoomChangeInfo.newZoomFactor}`);
     
     // Respond to zoom changes
-    this.recordZoomPreference(info.tabId, info.newZoomFactor);
+    this.recordZoomPreference(zoomChangeInfo.tabId, zoomChangeInfo.newZoomFactor);
   }
   
   private recordZoomPreference(tabId: number, zoomFactor: number) {
