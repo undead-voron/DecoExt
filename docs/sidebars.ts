@@ -17,9 +17,9 @@ const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     'intro',
     {
-      type: 'category',
-      label: 'Core',
-      items: ['core/injectable-service'],
+      type: 'doc',
+      id: 'core/injectable-service',
+      label: '@InjectableService()',
     },
     {
       type: 'category',
