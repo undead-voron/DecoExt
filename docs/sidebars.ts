@@ -23,7 +23,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Alarms Decorators',
+      label: 'alarms',
       link: {type: 'doc', id: 'api/alarms-decorators'},
       items: [
         {
@@ -40,7 +40,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Bookmarks Decorators',
+      label: 'bookmarks',
       link: {type: 'doc', id: 'api/bookmarks-decorators'},
       items: [
         {
@@ -107,7 +107,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Commands Decorators',
+      label: 'commands',
       link: {type: 'doc', id: 'api/commands-decorators'},
       items: [
         {
@@ -119,7 +119,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Downloads Decorators',
+      label: 'downloads',
       link: {type: 'doc', id: 'api/downloads-decorators'},
       items: [
         {
@@ -151,7 +151,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'History Decorators',
+      label: 'history',
       link: {type: 'doc', id: 'api/history-decorators'},
       items: [
         {
@@ -178,7 +178,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Idle Decorators',
+      label: 'idle',
       link: {type: 'doc', id: 'api/idle-decorators'},
       items: [
         {
@@ -190,7 +190,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Management Decorators',
+      label: 'management',
       link: {type: 'doc', id: 'api/management-decorators'},
       items: [
         {
@@ -227,7 +227,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Messaging Decorators',
+      label: 'messaging',
       link: {type: 'doc', id: 'api/messaging-decorators'},
       items: [
         {
@@ -249,7 +249,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Omnibox Decorators',
+      label: 'omnibox',
       link: {type: 'doc', id: 'api/omnibox-decorators'},
       items: [
         {
@@ -291,7 +291,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Permissions Decorators',
+      label: 'permissions',
       link: {type: 'doc', id: 'api/permissions-decorators'},
       items: [
         {
@@ -313,7 +313,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Runtime Decorators',
+      label: 'runtime',
       link: {type: 'doc', id: 'api/runtime-decorators'},
       items: [
         {
@@ -355,7 +355,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Sessions Decorators',
+      label: 'sessions',
       link: {type: 'doc', id: 'api/sessions-decorators'},
       items: [
         {
@@ -367,7 +367,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Tabs Decorators',
+      label: 'tabs',
       link: {type: 'doc', id: 'api/tabs-decorators'},
       items: [
         {
@@ -429,7 +429,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Web Navigation Decorators',
+      label: 'webNavigation',
       link: {type: 'doc', id: 'api/web-navigation-decorators'},
       items: [
         {
@@ -516,7 +516,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Windows Decorators',
+      label: 'windows',
       link: {type: 'doc', id: 'api/windows-decorators'},
       items: [
         {
