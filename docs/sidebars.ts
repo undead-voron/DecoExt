@@ -202,6 +202,68 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Tabs Decorators',
+      link: {type: 'doc', id: 'api/tabs-decorators'},
+      items: [
+        {
+          type: 'link',
+          label: '@onTabActivated()',
+          href: '/api/tabs-decorators#ontabactivated',
+        },
+        {
+          type: 'link',
+          label: '@onTabCreated()',
+          href: '/api/tabs-decorators#ontabcreated',
+        },
+        {
+          type: 'link',
+          label: '@onTabRemoved()',
+          href: '/api/tabs-decorators#ontabremoved',
+        },
+        {
+          type: 'link',
+          label: '@onTabUpdated()',
+          href: '/api/tabs-decorators#ontabupdated',
+        },
+        {
+          type: 'link',
+          label: '@onTabZoomChange()',
+          href: '/api/tabs-decorators#ontabzoomchange',
+        },
+        {
+          type: 'link',
+          label: '@activatedTabDetails()',
+          href: '/api/tabs-decorators#activatedtabdetails',
+        },
+        {
+          type: 'link',
+          label: '@createdTabDetails()',
+          href: '/api/tabs-decorators#createdtabdetails',
+        },
+        {
+          type: 'link',
+          label: '@removedTabDetails()',
+          href: '/api/tabs-decorators#removedtabdetails',
+        },
+        {
+          type: 'link',
+          label: '@tabUpdatedDetails()',
+          href: '/api/tabs-decorators#tabupdateddetails',
+        },
+        {
+          type: 'link',
+          label: '@tabUpdatedTab()',
+          href: '/api/tabs-decorators#tabupdatedtab',
+        },
+        {
+          type: 'link',
+          label: '@zoomChangeInfo()',
+          href: '/api/tabs-decorators#zoomchangeinfo',
+        },
+      ],
+    },
+    {
+      type: 'category',
       label: 'Alarms Decorators',
       link: {type: 'doc', id: 'api/alarms-decorators'},
       items: [
