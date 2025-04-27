@@ -6,14 +6,16 @@ import { callOnce } from '~/utils'
 type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((alarm: browser.Alarms.Alarm) => unknown)
 
 const listeners = new Set<(alarm: browser.Alarms.Alarm) => Promise<void>>()
-const namedListeners = new Map<string, AllowedListener>()
+const namedListeners = new Map<string, Set<AllowedListener>>()
 
 const createInitialListener = callOnce(() => {
   browser.alarms.onAlarm.addListener((alarm) => {
-    const listener = namedListeners.get(alarm.name)
+    const alarmListeners = namedListeners.get(alarm.name)
 
-    if (listener) {
-      listener(alarm)
+    if (alarmListeners) {
+      for (const listener of alarmListeners) {
+        listener(alarm)
+      }
     }
 
     for (const listener of listeners)
@@ -41,7 +43,10 @@ export function onAlarmFired<T extends AllowedListener>({ name }: { name?: strin
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
     const listener = listenerWrapper(target, descriptor.value as T, propertyKey)
     if (name) {
-      namedListeners.set(name, listener)
+      if (!namedListeners.has(name)) {
+        namedListeners.set(name, new Set())
+      }
+      namedListeners.get(name)!.add(listener)
     }
     else {
       listeners.add(listener)
