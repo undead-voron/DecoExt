@@ -1,12 +1,11 @@
-import { createDecorator } from '~/buildDecoratorAndMethodWrapper';
-import { storageMetadataKey } from './onChanged'; // storageMetadataKey is a Symbol
+import { storageParamFactory } from './onChanged';
 
 // Parameter decorator for the 'changes' object from storage.onChanged
-export const StorageChanges = createDecorator<'allChanges'>(storageMetadataKey).decorator;
+export const storageChanges = storageParamFactory('allChanges');
 
 // Parameter decorator for the 'areaName' string from storage.onChanged
-export const StorageAreaName = createDecorator<'areaName'>(storageMetadataKey).decorator;
+export const storageAreaName = storageParamFactory('areaName');
 
 // Parameter decorator for the specific StorageChange object 
 // (if a key was provided to onStorageChanged options)
-export const StorageItemChange = createDecorator<'specificChange'>(storageMetadataKey).decorator;
+export const storageItemChange = storageParamFactory('specificChange');

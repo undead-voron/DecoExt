@@ -1,2 +1,2 @@
 export { onStorageChanged } from './onChanged';
-export { StorageChanges, StorageAreaName, StorageItemChange } from './parameterDecorators';
+export { storageChanges, storageAreaName, storageItemChange } from './parameterDecorators';

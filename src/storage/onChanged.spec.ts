@@ -1,65 +1,72 @@
 import browser from 'webextension-polyfill';
-import { container } from '~/injectablesContainer';
+import container from '~/injectablesContainer'; // Corrected import for default export
 import { resolve } from '~/instanceResolver';
 import { InjectableService } from '~/service';
-import { onStorageChanged, StorageAreaName, StorageChanges, StorageItemChange } from './index';
+import { onStorageChanged, storageAreaName, storageChanges, storageItemChange } from './index';
+import { vi } from 'vitest'; // Import vi for Vitest's mocking API
 
 // Mock webextension-polyfill
-jest.mock('webextension-polyfill', () => ({
-  storage: {
-    onChanged: {
-      addListener: jest.fn(),
+vi.mock('webextension-polyfill', () => {
+  // Define a more complete mock for the 'browser' object
+  const mockBrowser = {
+    storage: {
+      onChanged: {
+        addListener: vi.fn(),
+      },
+      local: {
+        get: vi.fn(),
+        set: vi.fn(),
+        remove: vi.fn(),
+        clear: vi.fn(),
+      },
+      sync: {
+        get: vi.fn(),
+        set: vi.fn(),
+        remove: vi.fn(),
+        clear: vi.fn(),
+      },
+      session: {
+        get: vi.fn(),
+        set: vi.fn(),
+        remove: vi.fn(),
+        clear: vi.fn(),
+      },
+      managed: {
+        get: vi.fn(),
+      }
     },
-    // Mock other storage areas if directly used by tests, though not typical for onChanged
-    local: {
-      get: jest.fn(),
-      set: jest.fn(),
-      remove: jest.fn(),
-      clear: jest.fn(),
+    // REMOVED EXTRA CLOSING BRACE HERE
+    runtime: {
+      // Mock runtime properties if needed by other parts of the codebase indirectly
+      id: 'test-extension-id',
+      getURL: (path: string) => `chrome-extension://test-extension-id/${path}`,
+      // ... other runtime mocks if necessary
     },
-    sync: {
-      get: jest.fn(),
-      set: jest.fn(),
-      remove: jest.fn(),
-      clear: jest.fn(),
-    },
-    session: {
-      get: jest.fn(),
-      set: jest.fn(),
-      remove: jest.fn(),
-      clear: jest.fn(),
-    },
-    managed: {
-      get: jest.fn(),
-    }
-  },
-  runtime: {
-    // Mock runtime properties if needed by other parts of the codebase indirectly
-    id: 'test-extension-id',
-    getURL: (path: string) => `chrome-extension://test-extension-id/${path}`,
-    // ... other runtime mocks if necessary
-  },
-  // ... other browser API mocks if necessary
-}));
+    // Add other top-level browser APIs if needed by the code under test
+    // For now, ensuring storage and runtime are well-defined is key.
+  };
+  return { default: mockBrowser }; // For ES Modules, the mock often needs to be under a 'default' key
+});
 
 describe('Storage Decorators', () => {
   let storageChangedListener: (changes: { [key: string]: browser.storage.StorageChange }, areaName: browser.storage.AreaName) => void;
 
   beforeEach(() => {
     // Capture the listener
-    (browser.storage.onChanged.addListener as jest.Mock).mockImplementation((callback) => {
+    // After mocking, browser.storage.onChanged.addListener should be the mock function.
+    (browser.storage.onChanged.addListener as ReturnType<typeof vi.fn>).mockImplementation((callback: any) => { // Added :any to callback
       storageChangedListener = callback;
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    container.clear(); // Reset DI container
+    vi.clearAllMocks(); // Use vi.clearAllMocks with Vitest
+    // container.clear(); // Temporarily comment this out // Reset DI container
   });
 
   describe('@onStorageChanged Core Functionality', () => {
     it('Test 1: Basic invocation with specific key', () => {
-      const mockMethod = jest.fn();
+      const mockMethod = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
@@ -67,9 +74,9 @@ describe('Storage Decorators', () => {
         handleStorageChange() {
           mockMethod();
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService); // Registration should be handled by @InjectableService
       resolve(TestService); // Triggers initialListener setup via decorator
 
       const changes = { testKey: { oldValue: 1, newValue: 2 } };
@@ -78,7 +85,7 @@ describe('Storage Decorators', () => {
     });
 
     it('Test 2: storageArea mismatch', () => {
-      const mockMethod = jest.fn();
+      const mockMethod = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
@@ -86,9 +93,9 @@ describe('Storage Decorators', () => {
         handleStorageChange() {
           mockMethod();
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       const changes = { testKey: { oldValue: 1, newValue: 2 } };
@@ -97,7 +104,7 @@ describe('Storage Decorators', () => {
     });
 
     it('Test 3: key mismatch', () => {
-      const mockMethod = jest.fn();
+      const mockMethod = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
@@ -105,9 +112,9 @@ describe('Storage Decorators', () => {
         handleStorageChange() {
           mockMethod();
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       const changes = { otherKey: { oldValue: 1, newValue: 2 } }; // Different key
@@ -116,7 +123,7 @@ describe('Storage Decorators', () => {
     });
 
     it('Test 4: No specific key in decorator options', () => {
-      const mockMethod = jest.fn();
+      const mockMethod = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
@@ -124,9 +131,9 @@ describe('Storage Decorators', () => {
         handleStorageChange() {
           mockMethod();
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       const changes = { anyKey: { oldValue: 1, newValue: 2 } };
@@ -135,8 +142,8 @@ describe('Storage Decorators', () => {
     });
     
     it('Test 5: Multiple listeners', () => {
-      const mockMethodA = jest.fn();
-      const mockMethodB = jest.fn();
+      const mockMethodA = vi.fn(); // Changed to vi.fn()
+      const mockMethodB = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
@@ -149,9 +156,9 @@ describe('Storage Decorators', () => {
         handleB() {
           mockMethodB();
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       // Trigger for keyA
@@ -171,19 +178,21 @@ describe('Storage Decorators', () => {
     const areaNamePayload = 'sync' as browser.storage.AreaName;
 
     it('Test 6: @StorageChanges() decorator', () => {
-      const capturedArgs = jest.fn();
+      console.log('[DEBUG] storageChanges decorator function type:', typeof storageChanges);
+      console.log('[DEBUG] storageChanges itself:', storageChanges ? storageChanges.toString().slice(0, 100) + "..." : "undefined");
+      const capturedArgs = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
         @onStorageChanged({ storageArea: areaNamePayload, key: 'itemKey' })
         handleStorageChange(
-          @StorageChanges() changesParam: any,
+          @storageChanges() changesParam: any,
         ) {
           capturedArgs({ changesParam });
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       storageChangedListener(mockChangesPayload, areaNamePayload);
@@ -191,19 +200,19 @@ describe('Storage Decorators', () => {
     });
 
     it('Test 7: @StorageAreaName() decorator', () => {
-      const capturedArgs = jest.fn();
+      const capturedArgs = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
         @onStorageChanged({ storageArea: areaNamePayload, key: 'itemKey' })
         handleStorageChange(
-          @StorageAreaName() areaParam: string,
+          @storageAreaName() areaParam: string,
         ) {
           capturedArgs({ areaParam });
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
       
       storageChangedListener(mockChangesPayload, areaNamePayload);
@@ -211,19 +220,19 @@ describe('Storage Decorators', () => {
     });
 
     it('Test 8: @StorageItemChange() decorator (with key in onStorageChanged)', () => {
-      const capturedArgs = jest.fn();
+      const capturedArgs = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class TestService {
         @onStorageChanged({ storageArea: areaNamePayload, key: 'itemKey' })
         handleStorageChange(
-          @StorageItemChange() itemChangeParam: browser.storage.StorageChange,
+          @storageItemChange() itemChangeParam: browser.storage.StorageChange,
         ) {
           capturedArgs({ itemChangeParam });
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       const specificChanges = { itemKey: { oldValue: 'a', newValue: 'b' } };
@@ -232,7 +241,7 @@ describe('Storage Decorators', () => {
     });
 
     it('Test 9: @StorageItemChange() decorator (no key in onStorageChanged)', () => {
-      const capturedArgs = jest.fn();
+      const capturedArgs = vi.fn(); // Changed to vi.fn()
       const localArea = 'local' as browser.storage.AreaName;
 
       @InjectableService()
@@ -240,15 +249,15 @@ describe('Storage Decorators', () => {
         // No specific key for onStorageChanged
         @onStorageChanged({ storageArea: localArea }) 
         handleStorageChange(
-          @StorageItemChange() itemChangeParam: browser.storage.StorageChange | undefined,
-          @StorageChanges() allChanges: any, // Added to ensure method is called
-          @StorageAreaName() area: string
+          @storageItemChange() itemChangeParam: browser.storage.StorageChange | undefined,
+          @storageChanges() allChanges: any, // Added to ensure method is called
+          @storageAreaName() area: string
         ) {
           capturedArgs({ itemChangeParam, allChanges, area });
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       const changes = { anyKey: { oldValue: 1, newValue: 2 } };
@@ -265,22 +274,22 @@ describe('Storage Decorators', () => {
     });
 
     it('Test 10: All parameter decorators used together', () => {
-      const capturedArgs = jest.fn();
+      const capturedArgs = vi.fn(); // Changed to vi.fn()
       const specificKey = 'itemKey';
 
       @InjectableService()
       class TestService {
         @onStorageChanged({ storageArea: areaNamePayload, key: specificKey })
         handleStorageChange(
-          @StorageChanges() changesParam: any,
-          @StorageAreaName() areaParam: string,
-          @StorageItemChange() itemChangeParam: browser.storage.StorageChange,
+          @storageChanges() changesParam: any,
+          @storageAreaName() areaParam: string,
+          @storageItemChange() itemChangeParam: browser.storage.StorageChange,
         ) {
           capturedArgs({ changesParam, areaParam, itemChangeParam });
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
-      container.register(TestService);
+      // container.register(TestService);
       resolve(TestService);
 
       storageChangedListener(mockChangesPayload, areaNamePayload);
@@ -294,7 +303,7 @@ describe('Storage Decorators', () => {
 
   describe('InjectableService Integration', () => {
     it('should call init on the service when resolved', () => {
-      const mockInit = jest.fn();
+      const mockInit = vi.fn(); // Changed to vi.fn()
       @InjectableService()
       class TestService {
         init = mockInit; // Assign mockInit to init property
@@ -302,7 +311,7 @@ describe('Storage Decorators', () => {
         @onStorageChanged({ storageArea: 'local', key: 'testKey' })
         someMethod() {} // Decorator needed to trigger listener setup
       }
-      container.register(TestService);
+      // container.register(TestService); // Registration should be handled by @InjectableService
       resolve(TestService); // This should trigger the init
       
       expect(mockInit).toHaveBeenCalled();
@@ -311,7 +320,7 @@ describe('Storage Decorators', () => {
     it('should not call decorated method if service not registered/resolved', () => {
       // This test is somewhat conceptual as decorators are applied at class definition,
       // but listener registration logic relies on instance resolution.
-      const mockMethod = jest.fn();
+      const mockMethod = vi.fn(); // Changed to vi.fn()
 
       @InjectableService()
       class UnresolvedService {
@@ -319,7 +328,7 @@ describe('Storage Decorators', () => {
         handle() {
           mockMethod();
         }
-        init = jest.fn();
+        init = vi.fn(); // Changed to vi.fn()
       }
       // DO NOT register or resolve UnresolvedService with the container
 
@@ -331,4 +340,3 @@ describe('Storage Decorators', () => {
     });
   });
 });
-```

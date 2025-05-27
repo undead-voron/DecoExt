@@ -20,7 +20,7 @@ This decorator must be used on methods within a class decorated by `@InjectableS
 ### Example
 
 ```typescript
-import { InjectableService, onStorageChanged, StorageChanges, StorageAreaName, StorageItemChange } from 'your-library-name'; // Replace 'your-library-name'
+import { InjectableService, onStorageChanged, storageChanges, storageAreaName, storageItemChange } from 'your-library-name'; // Replace 'your-library-name'
 import browser from 'webextension-polyfill';
 
 @InjectableService()
@@ -31,8 +31,8 @@ class StorageWatcherService {
 
   @onStorageChanged({ storageArea: 'local', key: 'userPreferences' })
   handleUserPreferencesChange(
-    @StorageItemChange() itemChange?: browser.storage.StorageChange,
-    @StorageAreaName() area?: string
+    @storageItemChange() itemChange?: browser.storage.StorageChange,
+    @storageAreaName() area?: string
   ) {
     if (itemChange) {
       console.log(`User preferences changed in ${area}:`, itemChange.newValue);
@@ -41,8 +41,8 @@ class StorageWatcherService {
 
   @onStorageChanged({ storageArea: 'sync' })
   handleAnySyncChange(
-    @StorageChanges() changes: { [key: string]: browser.storage.StorageChange },
-    @StorageAreaName() area: string
+    @storageChanges() changes: { [key: string]: browser.storage.StorageChange },
+    @storageAreaName() area: string
   ) {
     console.log(`Changes in ${area}:`, changes);
     for (const [key, value] of Object.entries(changes)) {
@@ -56,19 +56,19 @@ class StorageWatcherService {
 
 These decorators can be used on parameters of methods decorated with `@onStorageChanged`.
 
-### `@StorageChanges()`
+### `@storageChanges()`
 
 Injects the entire `changes` object from the `browser.storage.onChanged` event. This object maps changed keys to their `browser.storage.StorageChange` objects.
 
 *   **Type**: `{ [key: string]: browser.storage.StorageChange }`
 
-### `@StorageAreaName()`
+### `@storageAreaName()`
 
 Injects the name of the storage area where the change occurred (e.g., `'local'`, `'sync'`, `'session'`).
 
 *   **Type**: `string`
 
-### `@StorageItemChange()`
+### `@storageItemChange()`
 
 Injects the `browser.storage.StorageChange` object for the specific key that was defined in the `@onStorageChanged({ key: '...' })` decorator's options.
 
