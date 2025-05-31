@@ -1,11 +1,11 @@
 import {
-  InjectableService,
-  Module,
   activatedTabDetails,
   createdTabDetails,
   iconClickedDetails,
+  InjectableService,
   menusClickedDetails,
   menusClickedTab,
+  Module,
   onIconClicked,
   onInstalled,
   onMenusClicked,
@@ -22,6 +22,7 @@ import browser, { Tabs } from 'webextension-polyfill'
 // you can import service without any name and it will be processed by js.
 // if you import with name you need to pass it into Module decorator
 import './additionalService'
+import './storageService'
 
 @InjectableService()
 class Main {

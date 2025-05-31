@@ -1,4 +1,4 @@
-import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import type { SidebarsConfig } from '@docusaurus/plugin-content-docs'
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -7,9 +7,9 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
  - create an ordered group of docs
  - render a sidebar for each doc of that group
  - provide next/previous navigation
-
+ 
  The sidebars can be generated from the filesystem, or explicitly defined here.
-
+ 
  Create as many sidebars as you want.
  */
 const sidebars: SidebarsConfig = {
@@ -24,7 +24,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'alarms',
-      link: {type: 'doc', id: 'api/alarms-decorators'},
+      link: { type: 'doc', id: 'api/alarms-decorators' },
       items: [
         {
           type: 'link',
@@ -41,7 +41,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'bookmarks',
-      link: {type: 'doc', id: 'api/bookmarks-decorators'},
+      link: { type: 'doc', id: 'api/bookmarks-decorators' },
       items: [
         {
           type: 'link',
@@ -108,7 +108,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'commands',
-      link: {type: 'doc', id: 'api/commands-decorators'},
+      link: { type: 'doc', id: 'api/commands-decorators' },
       items: [
         {
           type: 'link',
@@ -120,7 +120,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'downloads',
-      link: {type: 'doc', id: 'api/downloads-decorators'},
+      link: { type: 'doc', id: 'api/downloads-decorators' },
       items: [
         {
           type: 'link',
@@ -152,7 +152,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'history',
-      link: {type: 'doc', id: 'api/history-decorators'},
+      link: { type: 'doc', id: 'api/history-decorators' },
       items: [
         {
           type: 'link',
@@ -179,7 +179,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'idle',
-      link: {type: 'doc', id: 'api/idle-decorators'},
+      link: { type: 'doc', id: 'api/idle-decorators' },
       items: [
         {
           type: 'link',
@@ -191,7 +191,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'management',
-      link: {type: 'doc', id: 'api/management-decorators'},
+      link: { type: 'doc', id: 'api/management-decorators' },
       items: [
         {
           type: 'link',
@@ -228,7 +228,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'messaging',
-      link: {type: 'doc', id: 'api/messaging-decorators'},
+      link: { type: 'doc', id: 'api/messaging-decorators' },
       items: [
         {
           type: 'link',
@@ -250,7 +250,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'omnibox',
-      link: {type: 'doc', id: 'api/omnibox-decorators'},
+      link: { type: 'doc', id: 'api/omnibox-decorators' },
       items: [
         {
           type: 'link',
@@ -292,7 +292,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'permissions',
-      link: {type: 'doc', id: 'api/permissions-decorators'},
+      link: { type: 'doc', id: 'api/permissions-decorators' },
       items: [
         {
           type: 'link',
@@ -314,7 +314,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'runtime',
-      link: {type: 'doc', id: 'api/runtime-decorators'},
+      link: { type: 'doc', id: 'api/runtime-decorators' },
       items: [
         {
           type: 'link',
@@ -356,7 +356,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'sessions',
-      link: {type: 'doc', id: 'api/sessions-decorators'},
+      link: { type: 'doc', id: 'api/sessions-decorators' },
       items: [
         {
           type: 'link',
@@ -367,8 +367,35 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'storage',
+      link: { type: 'doc', id: 'api/storage-decorators' },
+      items: [
+        {
+          type: 'link',
+          label: '@onStorageChanged()',
+          href: '/api/storage-decorators#onstoragechanged',
+        },
+        {
+          type: 'link',
+          label: '@storageChanges()',
+          href: '/api/storage-decorators#storagechanges',
+        },
+        {
+          type: 'link',
+          label: '@storageAreaName()',
+          href: '/api/storage-decorators#storageareaname',
+        },
+        {
+          type: 'link',
+          label: '@storageChangeValue()',
+          href: '/api/storage-decorators#storagechangevalue',
+        },
+      ],
+    },
+    {
+      type: 'category',
       label: 'tabs',
-      link: {type: 'doc', id: 'api/tabs-decorators'},
+      link: { type: 'doc', id: 'api/tabs-decorators' },
       items: [
         {
           type: 'link',
@@ -430,7 +457,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'webNavigation',
-      link: {type: 'doc', id: 'api/web-navigation-decorators'},
+      link: { type: 'doc', id: 'api/web-navigation-decorators' },
       items: [
         {
           type: 'link',
@@ -517,7 +544,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'windows',
-      link: {type: 'doc', id: 'api/windows-decorators'},
+      link: { type: 'doc', id: 'api/windows-decorators' },
       items: [
         {
           type: 'link',
@@ -542,6 +569,6 @@ const sidebars: SidebarsConfig = {
       ],
     },
   ],
-};
+}
 
-export default sidebars;
+export default sidebars
