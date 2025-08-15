@@ -43,9 +43,9 @@ export const omniboxInputEntered = decorator
  * - 'newForegroundTab': Open in a new foreground tab
  * - 'newBackgroundTab': Open in a new background tab
  */
-export function onOmniboxInputEntered<T extends AllowedListener>() {
+export function onOmniboxInputEntered<T extends AllowedListener>({ filter }: { filter?: (arg: { text: string, disposition: DispositionType }) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

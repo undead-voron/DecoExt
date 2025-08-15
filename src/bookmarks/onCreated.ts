@@ -42,11 +42,15 @@ function decoratorsHandler(arg: { id: string, bookmark: browser.Bookmarks.Bookma
   }
 }
 
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, options: { filter?: (arg: { id: string, bookmark: browser.Bookmarks.BookmarkTreeNode }) => boolean | Promise<boolean> } = {}) {
   return async (arg: { id: string, bookmark: browser.Bookmarks.BookmarkTreeNode }): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(arg))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -68,9 +72,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * Method is called with parameter that contains 'id' and 'bookmark' properties
  * unless parameter decorators are used.
  */
-export function onBookmarkCreated<T extends AllowedListener>() {
+export function onBookmarkCreated<T extends AllowedListener>({ filter }: { filter?: (arg: { id: string, bookmark: browser.Bookmarks.BookmarkTreeNode }) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

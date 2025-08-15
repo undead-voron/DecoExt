@@ -29,10 +29,10 @@ export const navigationDetails = decorator
  * Method is called with parameter that contains 'details' property
  * unless parameter decorators are used.
  */
-export function onBeforeNavigate<T extends AllowedListener>() {
+export function onBeforeNavigate<T extends AllowedListener>({ filter }: { filter?: (details: browser.WebNavigation.OnBeforeNavigateDetailsType) => boolean | Promise<boolean> } = {}) {
   // TODO: add filtering option
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

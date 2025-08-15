@@ -29,9 +29,9 @@ export const historyItem = decorator
  * Method is called with parameter that contains 'historyItem' property with the interface matching browser.History.HistoryItem type
  * unless parameter decorators are used.
  */
-export function onHistoryVisited<T extends AllowedListener>() {
+export function onHistoryVisited<T extends AllowedListener>({ filter }: { filter?: (historyItem: browser.History.HistoryItem) => boolean | Promise<boolean> }) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

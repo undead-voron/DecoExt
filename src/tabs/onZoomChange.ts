@@ -36,9 +36,9 @@ export const zoomChangeInfo = decorator
  * Method is called when a tab's zoom factor changes.
  * The method is called with a 'zoomChangeInfo' parameter by default unless parameter decorators are used.
  */
-export function onTabZoomChange<T extends AllowedListener>() {
+export function onTabZoomChange<T extends AllowedListener>({ filter }: { filter?: (zoomChangeInfo: ZoomChangeInfo) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

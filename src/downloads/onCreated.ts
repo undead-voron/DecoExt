@@ -29,9 +29,9 @@ export const downloadItem = decorator
  * Method is called when a download begins.
  * The method is called with a 'downloadItem' parameter by default unless parameter decorators are used.
  */
-export function onDownloadCreated<T extends AllowedListener>() {
+export function onDownloadCreated<T extends AllowedListener>({ filter }: { filter?: (downloadItem: browser.Downloads.DownloadItem) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

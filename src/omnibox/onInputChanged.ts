@@ -42,9 +42,9 @@ export const omniboxInputChangedDetails = decorator
  * The 'text' property is the user's input
  * The 'suggest' property is a callback that provides suggestions to the user
  */
-export function onOmniboxInputChanged<T extends AllowedListener>() {
+export function onOmniboxInputChanged<T extends AllowedListener>({ filter }: { filter?: (arg: { text: string, suggest: SuggestCallback }) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

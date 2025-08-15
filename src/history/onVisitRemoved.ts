@@ -29,9 +29,9 @@ export const removedInfo = decorator
  * Method is called with parameter that contains 'removed' property with the interface matching RemovedVisits type
  * unless parameter decorators are used.
  */
-export function onHistoryVisitRemoved<T extends AllowedListener>() {
+export function onHistoryVisitRemoved<T extends AllowedListener>({ filter }: { filter?: (removed: browser.History.OnVisitRemovedRemovedType) => boolean | Promise<boolean> }) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

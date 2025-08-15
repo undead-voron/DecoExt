@@ -36,11 +36,15 @@ function decoratorsHandler(arg: { window: browser.Windows.Window }, constructor:
   }
 }
 
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, options: { filter?: (arg: { window: browser.Windows.Window }) => boolean | Promise<boolean> } = {}) {
   return async (arg: { window: browser.Windows.Window }): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(arg))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -62,10 +66,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * Method is called when a browser window is created.
  * The method is called with a 'window' parameter by default unless parameter decorators are used.
  */
-export function onWindowCreated<T extends AllowedListener>() {
-  // TODO: add window type filter https://developer.chrome.com/docs/extensions/reference/api/windows#type-WindowType
+export function onWindowCreated<T extends AllowedListener>({ filter }: { filter?: (arg: { window: browser.Windows.Window }) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

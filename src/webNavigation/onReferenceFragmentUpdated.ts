@@ -42,10 +42,10 @@ export const referenceFragmentUpdatedDetails = decorator
  * - transitionType: The type of transition, e.g. "link", "typed", etc.
  * - transitionQualifiers: An array of qualifiers describing the transition
  */
-export function onReferenceFragmentUpdated<T extends AllowedListener>() {
+export function onReferenceFragmentUpdated<T extends AllowedListener>({ filter }: { filter?: (details: browser.WebNavigation.OnReferenceFragmentUpdatedDetailsType) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
 
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

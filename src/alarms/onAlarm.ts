@@ -38,10 +38,10 @@ export const alarmDetails = decorator
  * Method is called when an alarm has elapsed.
  * The method is called with an 'alarm' parameter by default unless parameter decorators are used.
  */
-export function onAlarmFired<T extends AllowedListener>({ name }: { name?: string } = {}) {
+export function onAlarmFired<T extends AllowedListener>({ name, filter }: { name?: string, filter?: (alarm: browser.Alarms.Alarm) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    const listener = listenerWrapper(target, descriptor.value as T, propertyKey)
+    const listener = listenerWrapper(target, descriptor.value as T, propertyKey, { filter })
     if (name) {
       if (!namedListeners.has(name)) {
         namedListeners.set(name, new Set())

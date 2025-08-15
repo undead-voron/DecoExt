@@ -31,11 +31,15 @@ function decoratorsHandler(permissions: browser.Permissions.Permissions, constru
   }
 }
 
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, options: { filter?: (permissions: browser.Permissions.Permissions) => boolean | Promise<boolean> } = {}) {
   return async (permissions: browser.Permissions.Permissions): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(permissions))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -57,9 +61,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * Method is called when the extension loses permissions.
  * The method is called with a 'permissions' parameter by default unless parameter decorators are used.
  */
-export function onPermissionsRemoved<T extends AllowedListener>() {
+export function onPermissionsRemoved<T extends AllowedListener>({ filter }: { filter?: (permissions: browser.Permissions.Permissions) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

@@ -15,11 +15,15 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol, options: { filter?: (windowId: number) => boolean | Promise<boolean> } = {}) {
   return async (windowId: number): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(windowId))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -42,9 +46,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey
  * The method is called with a 'windowId' parameter of type number
  * Note: windowId can be WINDOW_ID_NONE (-1) when all windows lose focus.
  */
-export function onWindowFocusChanged<T extends AllowedListener>() {
+export function onWindowFocusChanged<T extends AllowedListener>({ filter }: { filter?: (windowId: number) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

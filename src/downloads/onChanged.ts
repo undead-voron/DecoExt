@@ -31,9 +31,9 @@ export const downloadDelta = decorator
  * The method is called with a 'downloadDelta' parameter by default unless parameter decorators are used.
  * The downloadDelta object contains the download id and optional changes to the download's properties.
  */
-export function onDownloadChanged<T extends AllowedListener>() {
+export function onDownloadChanged<T extends AllowedListener>({ filter }: { filter?: (downloadDelta: browser.Downloads.OnChangedDownloadDeltaType) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

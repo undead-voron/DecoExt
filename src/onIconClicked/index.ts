@@ -34,9 +34,9 @@ export const iconClickedDetails = decorator
  * @description
  * Method is called with parameter that represents the tab object browser.Tabs.Tab.
  */
-export function onIconClicked<T extends AllowedListener>() {
+export function onIconClicked<T extends AllowedListener>({ filter }: { filter?: (tab: browser.Tabs.Tab) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

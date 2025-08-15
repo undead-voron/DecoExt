@@ -41,11 +41,15 @@ function decoratorsHandler(arg: { tabId: number, details: browser.Tabs.OnUpdated
   }
 }
 
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, options: { filter?: (arg: { details: browser.Tabs.OnUpdatedChangeInfoType, tabId: number, tab: browser.Tabs.Tab }) => boolean | Promise<boolean> } = {}) {
   return async (arg: { details: browser.Tabs.OnUpdatedChangeInfoType, tabId: number, tab: browser.Tabs.Tab }): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(arg))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -66,11 +70,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * @description
  * Method is called with parameter that contains 'details' property with the interface matching browser.Tabs.OnUpdatedChangeInfoType type and tabId unless parameter decorators are used.
  */
-export function onTabUpdated<T extends AllowedListener>(
-  // TODO: consider adding some filters. not sure about it
-) {
+export function onTabUpdated<T extends AllowedListener>({ filter }: { filter?: (arg: { details: browser.Tabs.OnUpdatedChangeInfoType, tabId: number, tab: browser.Tabs.Tab }) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

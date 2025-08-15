@@ -41,9 +41,9 @@ export const historyStateUpdatedDetails = decorator
  * - transitionType: The type of transition, e.g. "link", "typed", etc.
  * - transitionQualifiers: An array of qualifiers describing the transition
  */
-export function onHistoryStateUpdated<T extends AllowedListener>() {
+export function onHistoryStateUpdated<T extends AllowedListener>({ filter }: { filter?: (details: browser.WebNavigation.OnHistoryStateUpdatedDetailsType) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

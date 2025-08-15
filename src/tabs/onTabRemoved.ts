@@ -33,9 +33,9 @@ export const removedTabDetails = decorator
  * @description
  * Method is called with parameter that represents removed tab with the interface matching browser.Tabs.OnRemovedRemoveInfoType type and extended with tabId.
  */
-export function onTabRemoved<T extends AllowedListener>() {
+export function onTabRemoved<T extends AllowedListener>({ filter }: { filter?: (arg: OnTabRemovedParameter) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }
