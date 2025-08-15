@@ -127,9 +127,9 @@ function listenerWrapper(
  * ```typescript
  * @onCookieChanged({ name: 'sessionId', domain: '.example.com' })
  * handleSessionCookie(
- *   @cookieValue value: string,
- *   @cookieRemoved removed: boolean,
- *   @cookieCause cause: CookieChangeCause
+ *   @cookie('value') value: string,
+ *   @cookieRemoved() removed: boolean,
+ *   @cookieCause() cause: CookieChangeCause
  * ) {
  *   if (removed) {
  *     console.log('Session cookie removed:', cause)
