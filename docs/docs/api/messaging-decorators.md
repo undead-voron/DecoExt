@@ -62,6 +62,195 @@ class AuthService {
 }
 ```
 
+## Filtering Events
+
+All messaging decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives a single argument object containing `{ data: any, sender: browser.Runtime.MessageSender }` and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onMessage, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class MessageFilterService {
+  // Only handle messages of specific types
+  @onMessage({ 
+    key: 'system:event',
+    filter: (arg) => arg.data.type === 'userAction' || arg.data.type === 'systemEvent'
+  })
+  handleImportantMessages(arg: { data: any, sender: browser.Runtime.MessageSender }) {
+    console.log(`Important message: ${arg.data.type}`);
+    this.processImportantMessage(arg.data);
+  }
+
+  // Only handle messages from content scripts
+  @onMessage({ 
+    key: 'content:message',
+    filter: (arg) => arg.sender.tab !== undefined 
+  })
+  handleContentScriptMessages(arg: { data: any, sender: browser.Runtime.MessageSender }) {
+    console.log(`Message from tab ${arg.sender.tab?.id}: ${arg.data.type}`);
+    this.processTabMessage(arg.data, arg.sender.tab!);
+  }
+
+  // Only handle messages from specific origins
+  @onMessage({ 
+    key: 'trusted:site',
+    filter: (arg) => {
+      const url = arg.sender.tab?.url || arg.sender.url;
+      return url?.includes('github.com') || url?.includes('stackoverflow.com');
+    }
+  })
+  handleTrustedSiteMessages(arg: { data: any, sender: browser.Runtime.MessageSender }) {
+    console.log('Message from trusted site');
+    this.processTrustedMessage(arg.data);
+  }
+
+  private processImportantMessage(message: any) {
+    // Process important messages
+  }
+
+  private processTabMessage(message: any, tab: browser.Tabs.Tab) {
+    // Process messages from tabs
+  }
+
+  private processTrustedMessage(message: any) {
+    // Process messages from trusted sites
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onMessage, InjectableService } from 'deco-ext';
+
+// Module-level configuration and tracking (accessible to filters)
+const allowedExtensions = new Set(['extension-id-1', 'extension-id-2']);
+const rateLimitMap = new Map<string, number[]>();
+
+// Helper functions for message validation
+async function validateSender(sender: browser.Runtime.MessageSender): Promise<boolean> {
+  // Validate the sender (check permissions, origin, etc.)
+  return true; // Example implementation
+}
+
+function validateMessageContent(message: any): boolean {
+  // Validate message content structure and data
+  return typeof message.type === 'string' && message.payload !== null;
+}
+
+@InjectableService()
+class AdvancedMessageService {
+  // Filter messages from specific extensions only
+  @onMessage({ 
+    key: 'extension:message',
+    filter: (arg) => {
+      const senderId = arg.sender.id;
+      return senderId ? allowedExtensions.has(senderId) : false;
+    }
+  })
+  handleExtensionMessages(arg: { data: any, sender: browser.Runtime.MessageSender }) {
+    console.log(`Message from allowed extension: ${arg.sender.id}`);
+    this.processExtensionMessage(arg.data, arg.sender);
+  }
+
+  // Rate-limited message filtering
+  @onMessage({ 
+    key: 'rate:limited',
+    filter: (arg) => {
+      const senderId = arg.sender.id || arg.sender.tab?.id?.toString() || 'unknown';
+      const now = Date.now();
+      const timeWindow = 60000; // 1 minute
+      const maxMessages = 10;
+      
+      if (!rateLimitMap.has(senderId)) {
+        rateLimitMap.set(senderId, []);
+      }
+      
+      const timestamps = rateLimitMap.get(senderId)!;
+      // Remove old timestamps
+      const recentTimestamps = timestamps.filter(ts => now - ts < timeWindow);
+      
+      if (recentTimestamps.length >= maxMessages) {
+        console.warn(`Rate limit exceeded for sender: ${senderId}`);
+        return false;
+      }
+      
+      recentTimestamps.push(now);
+      rateLimitMap.set(senderId, recentTimestamps);
+      return true;
+    }
+  })
+  handleRateLimitedMessages(arg: { data: any, sender: browser.Runtime.MessageSender }) {
+    console.log('Processing rate-limited message');
+    this.processMessage(arg.data);
+  }
+
+  // Filter based on message content and sender validation
+  @onMessage({ 
+    key: 'validated:message',
+    filter: async (arg) => {
+      // Validate message structure
+      if (!arg.data.type || !arg.data.payload) return false;
+      
+      // Additional async validation
+      const isValidSender = await validateSender(arg.sender);
+      const isValidMessage = validateMessageContent(arg.data);
+      
+      return isValidSender && isValidMessage;
+    }
+  })
+  handleValidatedMessages(arg: { data: any, sender: browser.Runtime.MessageSender }) {
+    console.log('Processing validated message');
+    this.processValidatedMessage(arg.data, arg.sender);
+  }
+
+  private processExtensionMessage(message: any, sender: browser.Runtime.MessageSender) {
+    // Process messages from allowed extensions
+  }
+
+  private processMessage(message: any) {
+    // Process rate-limited messages
+  }
+
+  private processValidatedMessage(message: any, sender: browser.Runtime.MessageSender) {
+    // Process fully validated messages
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+```typescript
+import { onMessage, messageData, messageSender, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class MessageTrackingService {
+  @onMessage({ 
+    key: 'analytics:track',
+    filter: (arg) => arg.data.type === 'analytics' && arg.sender.tab !== undefined
+  })
+  trackAnalyticsMessages(
+    @messageData('payload') payload: any,
+    @messageSender('tab') tab: browser.Tabs.Tab | undefined
+  ) {
+    if (tab && payload) {
+      console.log(`Analytics from tab ${tab.id}: ${JSON.stringify(payload)}`);
+      this.recordAnalytics(payload, tab);
+    }
+  }
+
+  private recordAnalytics(payload: any, tab: browser.Tabs.Tab) {
+    // Record analytics data
+  }
+}
+```
+
 ## Parameter Decorators
 
 ### messageData

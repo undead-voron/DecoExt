@@ -224,6 +224,15 @@ function isUpdateFromOldVersion(version: string): boolean {
 
 @InjectableService()
 class RuntimeFilterService {
+  // Only handle fresh installations (not updates or browser restarts)
+  @onInstalled({ 
+    filter: (details) => details.reason === 'install' 
+  })
+  handleFreshInstallation(details: browser.Runtime.OnInstalledDetailsType) {
+    console.log('Extension installed for the first time');
+    this.setupDefaultConfiguration();
+  }
+
   // Only handle updates from specific version ranges
   @onInstalled({ 
     filter: (details) => {
@@ -308,7 +317,32 @@ class AdvancedRuntimeService {
     // Notify user about important update
   }
 }
+```
 
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onInstalled, installedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class InstallationTrackingService {
+  @onInstalled({ 
+    filter: (details) => details.reason === 'update' && details.previousVersion !== undefined
+  })
+  trackVersionUpdate(
+    @installedDetails('previousVersion') oldVersion: string,
+    @installedDetails('reason') reason: string
+  ) {
+    console.log(`Extension updated from version ${oldVersion}`);
+    this.logVersionChange(oldVersion, reason);
+  }
+
+  private logVersionChange(oldVersion: string, reason: string) {
+    // Log the version change for analytics
+  }
+}
 ```
 
 ## Parameter Decorators
