@@ -86,7 +86,7 @@ function listenerWrapper(
     // Filter by options if specified
     if (
       (options.name && data.cookie.name !== options.name)
-      || (Object.hasOwn(data.cookie, 'path') && data.cookie.path !== options.path)
+      || (Object.hasOwn(options, 'path') && data.cookie.path !== options.path)
       || (options.domain && data.cookie.domain !== options.domain)
       || (options.filter && !(await options.filter(data)))
     ) {
