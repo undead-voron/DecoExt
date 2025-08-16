@@ -81,6 +81,101 @@ Commands must be registered in your extension's manifest.json file:
 
 The special command `_execute_browser_action` is used to open the extension's popup.
 
+## Filtering Events
+
+The `onCommand` decorator supports an optional `filter` parameter that allows you to conditionally handle command events. The filter function receives the command string and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onCommand, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class CommandFilterService {
+  // Only handle feature-related commands
+  @onCommand({ 
+    filter: (command) => command.startsWith('feature-') 
+  })
+  handleFeatureCommands(command: string) {
+    console.log(`Feature command executed: ${command}`);
+    
+    switch (command) {
+      case 'feature-toggle':
+        this.toggleFeature();
+        break;
+      case 'feature-reset':
+        this.resetFeature();
+        break;
+    }
+  }
+
+  // Only handle debug commands in development mode
+  @onCommand({ 
+    filter: (command) => command.startsWith('debug-') && process.env.NODE_ENV === 'development' 
+  })
+  handleDebugCommands(command: string) {
+    console.log(`Debug command executed: ${command}`);
+  }
+
+  private toggleFeature() {
+    // Toggle feature logic
+  }
+
+  private resetFeature() {
+    // Reset feature logic
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onCommand, InjectableService } from 'deco-ext';
+
+// Module-level configuration (accessible to filters)
+const userPermissions = ['read', 'write']; // Example user permissions
+const commandPermissions: { [key: string]: string[] } = {
+  'delete-data': ['admin'],
+  'modify-settings': ['write'],
+  'view-logs': ['read']
+};
+
+// Helper function for authentication check
+function isUserAuthenticated(): boolean {
+  // Check if user is authenticated
+  return true; // Example implementation
+}
+@InjectableService()
+class AdvancedCommandService {
+  // Filter commands based on user permissions (using module-level data)
+  @onCommand({ 
+    filter: async (command) => {
+      const requiredPermissions = commandPermissions[command] || [];
+      return requiredPermissions.every(perm => userPermissions.includes(perm));
+    }
+  })
+  handlePrivilegedCommands(command: string) {
+    console.log(`Privileged command executed: ${command}`);
+  }
+
+  // Filter commands based on application state (using module-level function)
+  @onCommand({ 
+    filter: (command) => {
+      // Only allow certain commands when user is authenticated
+      const authCommands = ['logout', 'profile', 'settings'];
+      return authCommands.includes(command) ? isUserAuthenticated() : true;
+    }
+  })
+  handleAuthenticatedCommands(command: string) {
+    console.log(`Authenticated command executed: ${command}`);
+  }
+}
+```
+
 ## Implementation Details
 
 This decorator uses a singleton pattern to ensure only one event listener is registered, and then routes events to all decorated methods. When a command is executed:

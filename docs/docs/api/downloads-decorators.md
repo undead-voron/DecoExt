@@ -124,6 +124,149 @@ class DownloadMonitor {
 }
 ```
 
+## Filtering Events
+
+All download decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onDownloadCreated, onDownloadChanged, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class DownloadFilterService {
+  // Only handle downloads of specific file types
+  @onDownloadCreated({ 
+    filter: (downloadItem) => downloadItem.filename.endsWith('.pdf') || downloadItem.filename.endsWith('.doc') 
+  })
+  handleDocumentDownloads(downloadItem: browser.Downloads.DownloadItem) {
+    console.log(`Document download started: ${downloadItem.filename}`);
+  }
+
+  // Only handle large downloads
+  @onDownloadCreated({ 
+    filter: (downloadItem) => downloadItem.totalBytes && downloadItem.totalBytes > 10 * 1024 * 1024 // > 10MB
+  })
+  handleLargeDownloads(downloadItem: browser.Downloads.DownloadItem) {
+    console.log(`Large download started: ${downloadItem.filename} (${downloadItem.totalBytes} bytes)`);
+  }
+
+  // Only handle download completions
+  @onDownloadChanged({ 
+    filter: (downloadDelta) => downloadDelta.state?.current === 'complete' 
+  })
+  handleDownloadCompletions(downloadDelta: browser.Downloads.OnChangedDownloadDeltaType) {
+    console.log(`Download #${downloadDelta.id} completed successfully`);
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onDownloadCreated, onDownloadChanged, onDownloadErased, InjectableService } from 'deco-ext';
+
+// Module-level tracking (accessible to filters)
+const trackedDownloads = new Set<number>();
+const trustedDomains = ['github.com', 'stackoverflow.com'];
+const largeFileThreshold = 10 * 1024 * 1024; // 10MB
+
+@InjectableService()
+class AdvancedDownloadService {
+  // Filter downloads from specific domains
+  @onDownloadCreated({ 
+    filter: (downloadItem) => {
+      try {
+        const url = new URL(downloadItem.url);
+        return trustedDomains.includes(url.hostname);
+      } catch {
+        return false;
+      }
+    }
+  })
+  handleTrustedSiteDownloads(downloadItem: browser.Downloads.DownloadItem) {
+    console.log(`Download from trusted site: ${downloadItem.url}`);
+    // Add to module-level tracking
+    trackedDownloads.add(downloadItem.id);
+  }
+
+  // Filter download changes with error handling (using module-level tracking)
+  @onDownloadChanged({ 
+    filter: async (downloadDelta) => {
+      // Only handle downloads we're tracking and that had errors
+      return trackedDownloads.has(downloadDelta.id) && 
+             downloadDelta.error?.current !== undefined;
+    }
+  })
+  handleTrackedDownloadErrors(downloadDelta: browser.Downloads.OnChangedDownloadDeltaType) {
+    console.log(`Error in tracked download #${downloadDelta.id}: ${downloadDelta.error?.current}`);
+  }
+
+  // Only handle erasure of recently completed downloads
+  @onDownloadErased({ 
+    filter: async (downloadId) => {
+      try {
+        const [downloadItem] = await browser.downloads.search({ id: downloadId });
+        if (!downloadItem) return false;
+        
+        // Only if completed within last hour
+        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+        return downloadItem.endTime && new Date(downloadItem.endTime).getTime() > oneHourAgo;
+      } catch {
+        return false;
+      }
+    }
+  })
+  handleRecentDownloadErasure(downloadId: number) {
+    console.log(`Recently completed download #${downloadId} was erased`);
+    // Remove from module-level tracking
+    trackedDownloads.delete(downloadId);
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onDownloadChanged, downloadDelta, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class DownloadProgressService {
+  @onDownloadChanged({ 
+    filter: (downloadDelta) => downloadDelta.percentComplete !== undefined // Only progress updates
+  })
+  trackDownloadProgress(
+    @downloadDelta('id') id: number,
+    @downloadDelta('percentComplete') progress: { current: number; previous: number } | undefined
+  ) {
+    if (progress) {
+      console.log(`Download #${id} progress: ${progress.current}%`);
+      
+      // Notify user at certain milestones
+      if (progress.current >= 100) {
+        this.notifyDownloadComplete(id);
+      } else if (progress.current >= 50 && progress.previous < 50) {
+        this.notifyDownloadHalfway(id);
+      }
+    }
+  }
+
+  private notifyDownloadComplete(id: number) {
+    console.log(`Download #${id} finished!`);
+  }
+
+  private notifyDownloadHalfway(id: number) {
+    console.log(`Download #${id} is halfway complete`);
+  }
+}
+```
+
 ## Parameter Decorators
 
 ### downloadItem
