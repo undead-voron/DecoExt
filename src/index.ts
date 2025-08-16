@@ -1,6 +1,7 @@
 export * from './alarms'
 export * from './bookmarks'
 export * from './commands'
+export * from './cookies'
 export * from './cronJob'
 export * from './downloads'
 export * from './history'
