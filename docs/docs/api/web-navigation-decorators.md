@@ -417,6 +417,176 @@ class TabReplacementTracker {
 }
 ```
 
+## Filtering Events
+
+All web navigation decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onNavigationCompleted, onBeforeNavigate, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class NavigationFilterService {
+  // Only handle navigation to specific domains
+  @onNavigationCompleted({ 
+    filter: (details) => {
+      const url = new URL(details.url);
+      return url.hostname.includes('github.com') || url.hostname.includes('stackoverflow.com');
+    }
+  })
+  handleDeveloperSites(details: browser.WebNavigation.OnCompletedDetailsType) {
+    console.log(`Navigation completed to developer site: ${details.url}`);
+    this.trackDeveloperActivity(details);
+  }
+
+  // Only handle main frame navigation (not subframes)
+  @onBeforeNavigate({ 
+    filter: (details) => details.frameId === 0 
+  })
+  handleMainFrameNavigation(details: browser.WebNavigation.OnBeforeNavigateDetailsType) {
+    console.log(`Main frame navigating to: ${details.url}`);
+    this.prepareForNavigation(details);
+  }
+
+  // Only handle HTTPS navigation
+  @onNavigationCompleted({ 
+    filter: (details) => details.url.startsWith('https://') 
+  })
+  handleSecureNavigation(details: browser.WebNavigation.OnCompletedDetailsType) {
+    console.log(`Secure navigation completed: ${details.url}`);
+    this.processSecureSite(details);
+  }
+
+  private trackDeveloperActivity(details: browser.WebNavigation.OnCompletedDetailsType) {
+    // Track developer site activity
+  }
+
+  private prepareForNavigation(details: browser.WebNavigation.OnBeforeNavigateDetailsType) {
+    // Prepare for main frame navigation
+  }
+
+  private processSecureSite(details: browser.WebNavigation.OnCompletedDetailsType) {
+    // Process secure site navigation
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onNavigationCommitted, onErrorOccurred, InjectableService } from 'deco-ext';
+
+// Module-level configuration and tracking (accessible to filters)
+const blockedDomains = new Set(['malicious-site.com', 'spam-site.net']);
+const importantTabs = new Set<number>();
+
+@InjectableService()
+class AdvancedNavigationService {
+
+  // Filter navigation in specific tabs only
+  @onNavigationCommitted({ 
+    filter: (details) => importantTabs.has(details.tabId) 
+  })
+  handleImportantTabNavigation(details: browser.WebNavigation.OnCommittedDetailsType) {
+    console.log(`Important tab navigation: ${details.url}`);
+    this.trackImportantNavigation(details);
+  }
+
+  // Filter and block navigation to malicious domains
+  @onBeforeNavigate({ 
+    filter: (details) => {
+      try {
+        const url = new URL(details.url);
+        const isBlocked = blockedDomains.has(url.hostname);
+        if (isBlocked) {
+          console.warn(`Blocked navigation to: ${details.url}`);
+        }
+        return isBlocked;
+      } catch {
+        return false;
+      }
+    }
+  })
+  handleBlockedNavigation(details: browser.WebNavigation.OnBeforeNavigateDetailsType) {
+    console.log('Handling blocked navigation attempt');
+    this.redirectToSafePage(details.tabId);
+  }
+
+  // Filter errors based on error type and context
+  @onErrorOccurred({ 
+    filter: (details) => {
+      const criticalErrors = ['net::ERR_CONNECTION_REFUSED', 'net::ERR_CERT_AUTHORITY_INVALID'];
+      return criticalErrors.includes(details.error);
+    }
+  })
+  handleCriticalNavigationErrors(details: browser.WebNavigation.OnErrorOccurredDetailsType) {
+    console.log(`Critical navigation error: ${details.error} on ${details.url}`);
+    this.handleSecurityError(details);
+  }
+
+  // Filter based on navigation timing and performance
+  @onNavigationCompleted({ 
+    filter: (details) => {
+      const navigationTime = details.timeStamp - (details as any).startTime || 0;
+      return navigationTime > 5000; // Slow navigation (>5 seconds)
+    }
+  })
+  handleSlowNavigation(details: browser.WebNavigation.OnCompletedDetailsType) {
+    console.log(`Slow navigation detected: ${details.url}`);
+    this.optimizePerformance(details);
+  }
+
+  private trackImportantNavigation(details: browser.WebNavigation.OnCommittedDetailsType) {
+    // Track navigation in important tabs
+  }
+
+  private redirectToSafePage(tabId: number) {
+    // Redirect to a safe page
+    browser.tabs.update(tabId, { url: 'chrome://newtab' });
+  }
+
+
+
+  private handleSecurityError(details: browser.WebNavigation.OnErrorOccurredDetailsType) {
+    // Handle security-related navigation errors
+  }
+
+  private optimizePerformance(details: browser.WebNavigation.OnCompletedDetailsType) {
+    // Optimize performance for slow-loading sites
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+```typescript
+import { onNavigationCompleted, webNavigationDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class NavigationTrackingService {
+  @onNavigationCompleted({ 
+    filter: (details) => details.frameId === 0 && details.url.includes('shop') // Shopping sites in main frame
+  })
+  trackShoppingSites(
+    @webNavigationDetails('url') url: string,
+    @webNavigationDetails('tabId') tabId: number,
+    @webNavigationDetails('timeStamp') timestamp: number
+  ) {
+    console.log(`Shopping site loaded in tab ${tabId}: ${url} at ${new Date(timestamp)}`);
+    this.analyzeShoppingSite(url, tabId);
+  }
+
+  private analyzeShoppingSite(url: string, tabId: number) {
+    // Analyze shopping site for deals or price tracking
+  }
+}
+```
+
 ## Parameter Decorators
 
 ### navigationDetails

@@ -28,10 +28,9 @@ export const navigationErrorDetails = decorator
  * Method is called with parameter that contains 'details' property
  * unless parameter decorators are used.
  */
-export function onNavigationError<T extends AllowedListener>() {
-  // TODO: add filtering
+export function onNavigationError<T extends AllowedListener>({ filter }: { filter?: (details: browser.WebNavigation.OnErrorOccurredDetailsType) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

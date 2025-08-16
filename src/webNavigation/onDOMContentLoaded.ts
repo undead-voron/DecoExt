@@ -29,10 +29,10 @@ export const domContentLoadedDetails = decorator
  * Method is called with parameter that contains 'details' property
  * unless parameter decorators are used.
  */
-export function onDOMContentLoaded<T extends AllowedListener>() {
+export function onDOMContentLoaded<T extends AllowedListener>({ filter }: { filter?: (details: browser.WebNavigation.OnDOMContentLoadedDetailsType) => boolean | Promise<boolean> } = {}) {
   // TODO: add filtering
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

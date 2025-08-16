@@ -31,9 +31,9 @@ export const activatedTabDetails = decorator
  * @description
  * Method is called with parameter that represents the tab object browser.Tabs.OnActivatedActiveInfoType
  */
-export function onTabActivated<T extends AllowedListener>() {
+export function onTabActivated<T extends AllowedListener>({ filter }: { filter?: (tab: browser.Tabs.OnActivatedActiveInfoType) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

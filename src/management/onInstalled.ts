@@ -30,11 +30,15 @@ function decoratorsHandler(info: browser.Management.ExtensionInfo, constructor: 
   }
 }
 
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, options: { filter?: (info: browser.Management.ExtensionInfo) => boolean | Promise<boolean> } = {}) {
   return async (info: browser.Management.ExtensionInfo): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(info))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -57,9 +61,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * The method is called with an 'info' parameter containing details about the extension by default
  * unless parameter decorators are used.
  */
-export function onExtensionInstalled<T extends AllowedListener>() {
+export function onExtensionInstalled<T extends AllowedListener>({ filter }: { filter?: (info: browser.Management.ExtensionInfo) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

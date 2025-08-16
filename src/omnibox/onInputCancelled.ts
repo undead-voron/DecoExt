@@ -16,12 +16,16 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-function listenerWrapper(targetClass: any, method: AllowedListener, _propertyKey: string | symbol) {
+function listenerWrapper(targetClass: any, method: AllowedListener, _propertyKey: string | symbol, options: { filter?: () => boolean | Promise<boolean> } = {}) {
   return async (): Promise<void> => {
   // get class wrapper from classes container
     const instanceWrapperConstructor = container.get(targetClass.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter())) {
+      return
+    }
 
     // resolve class to get single instance of classp
     const instance = resolve(instanceWrapperConstructor)
@@ -45,9 +49,9 @@ function listenerWrapper(targetClass: any, method: AllowedListener, _propertyKey
  * Method is called when the user cancels the input in the omnibox with the extension's
  * keyword selected. No parameters are passed to the method.
  */
-export function onOmniboxInputCancelled<T extends AllowedListener>() {
+export function onOmniboxInputCancelled<T extends AllowedListener>({ filter }: { filter?: () => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

@@ -22,11 +22,15 @@ type TypedAllowedListener<T extends DataTypeKey> = (...args: any[]) => GetReturn
 
 const listeners = new Map<DataTypeKey, TypedAllowedListener<DataTypeKey>>()
 
-function listenerWrapper<T extends DataTypeKey>(targetClass: any, method: TypedAllowedListener<T>, propertyKey: string | symbol) {
-  return async (arg: DefaultArg): Promise<ReturnType<TypedAllowedListener<T>>> => {
+function listenerWrapper<T extends DataTypeKey>(targetClass: any, method: TypedAllowedListener<T>, propertyKey: string | symbol, options: { filter?: (arg: { data: GetDataType<T>, sender: browser.Runtime.MessageSender }) => boolean | Promise<boolean> } = {}) {
+  return async (arg: DefaultArg): Promise<ReturnType<TypedAllowedListener<T>> | undefined> => {
     const instanceWrapperConstructor = container.get(targetClass.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(arg))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -54,7 +58,7 @@ const createInitialListener = callOnce(() => {
  *
  * Add listener for message by name
  */
-export function onMessage<K extends DataTypeKey, T extends (...args: any[]) => GetReturnType<K>>({ key }: { key: K }) {
+export function onMessage<K extends DataTypeKey, T extends (...args: any[]) => GetReturnType<K>>({ key, filter }: { key: K, filter?: (arg: { data: GetDataType<K>, sender: browser.Runtime.MessageSender }) => boolean | Promise<boolean> }) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => {
     const eventKey = key
@@ -63,7 +67,7 @@ export function onMessage<K extends DataTypeKey, T extends (...args: any[]) => G
     }
 
     // TODO: throw error if listener already exists
-    listeners.set(eventKey, listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.set(eventKey, listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }
 

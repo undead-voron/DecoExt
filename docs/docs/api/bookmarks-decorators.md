@@ -184,6 +184,104 @@ class BookmarkService {
 }
 ```
 
+## Filtering Events
+
+All bookmark decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Example
+
+```typescript
+import { onBookmarkCreated, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class BookmarkService {
+  // Only handle bookmarks created in a specific folder
+  @onBookmarkCreated({ 
+    filter: (arg) => arg.bookmark.parentId === 'bookmarks_bar' 
+  })
+  handleBookmarkBarCreation(arg: { id: string, bookmark: browser.Bookmarks.BookmarkTreeNode }) {
+    console.log(`New bookmark added to bookmarks bar: ${arg.bookmark.title}`);
+  }
+
+  // Only handle bookmarks with URLs (not folders)
+  @onBookmarkCreated({ 
+    filter: (arg) => !!arg.bookmark.url 
+  })
+  handleNewBookmarkWithUrl(arg: { id: string, bookmark: browser.Bookmarks.BookmarkTreeNode }) {
+    console.log(`New bookmark with URL: ${arg.bookmark.url}`);
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onBookmarkChanged, onBookmarkRemoved, InjectableService } from 'deco-ext';
+
+// Module-level configuration (accessible to filters)
+const IMPORTANT_PARENT_FOLDERS = ['bookmarks_bar', 'other_bookmarks'];
+const TEMP_FOLDER_PREFIX = '[Temp]';
+
+@InjectableService()
+class BookmarkService {
+  // Filter bookmark changes by specific properties
+  @onBookmarkChanged({ 
+    filter: (arg) => arg.changeInfo.title !== undefined || arg.changeInfo.url !== undefined
+  })
+  handleImportantChanges(arg: { id: string, changeInfo: browser.Bookmarks.OnChangedChangeInfoType }) {
+    console.log(`Important bookmark change detected for ID: ${arg.id}`);
+  }
+
+  // Filter bookmark removals to exclude temporary folders
+  @onBookmarkRemoved({ 
+    filter: async (arg) => {
+      // You can use async logic in filters
+      if (!arg.removeInfo.node) return true;
+      
+      // Skip if it's a temporary folder (using module-level constant)
+      return !arg.removeInfo.node.title?.startsWith(TEMP_FOLDER_PREFIX);
+    }
+  })
+  handlePermanentBookmarkRemoval(arg: { id: string, removeInfo: browser.Bookmarks.OnRemovedRemoveInfoType }) {
+    console.log(`Permanent bookmark removed: ${arg.removeInfo.node?.title}`);
+  }
+
+  // Filter based on parent folder using module-level data
+  @onBookmarkCreated({ 
+    filter: (arg) => IMPORTANT_PARENT_FOLDERS.includes(arg.bookmark.parentId || '')
+  })
+  handleImportantFolderBookmarks(arg: { id: string, bookmark: browser.Bookmarks.BookmarkTreeNode }) {
+    console.log(`Bookmark created in important folder: ${arg.bookmark.title}`);
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onBookmarkMoved, bookmarkMovedId, bookmarkMoveInfo, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class BookmarkService {
+  @onBookmarkMoved({ 
+    filter: (arg) => arg.moveInfo.parentId !== arg.moveInfo.oldParentId // Only cross-folder moves
+  })
+  handleCrossFolderMove(
+    @bookmarkMovedId() id: string,
+    @bookmarkMoveInfo('parentId') newFolder: string,
+    @bookmarkMoveInfo('oldParentId') oldFolder: string
+  ) {
+    console.log(`Bookmark ${id} moved from ${oldFolder} to ${newFolder}`);
+  }
+}
+```
+
 ## Parameter Decorators
 
 The Bookmarks API provides several parameter decorators for each event type:

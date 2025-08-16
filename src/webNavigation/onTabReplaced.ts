@@ -50,9 +50,9 @@ export const tabReplacedDetails = decorator
  * - @tabReplacedDetails('tabId'): The ID of the tab that replaced the old tab
  * - @tabReplacedDetails('timeStamp'): The time when the replacement happened
  */
-export function onTabReplaced<T extends AllowedListener>() {
+export function onTabReplaced<T extends AllowedListener>({ filter }: { filter?: (details: TabReplacedDetails) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

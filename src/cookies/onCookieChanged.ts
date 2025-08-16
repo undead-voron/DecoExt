@@ -9,6 +9,7 @@ export interface CookieChangeOptions {
   name?: string
   path?: string
   domain?: string
+  filter?: (data: browser.Cookies.OnChangedChangeInfoType) => boolean | Promise<boolean>
 }
 
 type AllowedListener = ((...args: any[]) => any) | (() => unknown) | ((data: browser.Cookies.OnChangedChangeInfoType) => unknown)
@@ -87,6 +88,7 @@ function listenerWrapper(
       (options.name && data.cookie.name !== options.name)
       || (Object.hasOwn(data.cookie, 'path') && data.cookie.path !== options.path)
       || (options.domain && data.cookie.domain !== options.domain)
+      || (options.filter && !(await options.filter(data)))
     ) {
       return
     }

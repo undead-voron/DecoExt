@@ -37,11 +37,15 @@ export function createDecorator<T>(description: string) {
 
 export function buildListenerWrapper<T, AllowedListener extends (...args: unknown[]) => unknown>(metadataKey: symbol) {
   const decoratedParametersHandler = createDecoratorHandler<T>(metadataKey)
-  const listenerWrapper = (targetClass: any, method: AllowedListener, propertyKey: string | symbol) => async (arg: T): Promise<void> => {
+  const listenerWrapper = (targetClass: any, method: AllowedListener, propertyKey: string | symbol, options: { filter?: (arg: T) => boolean | Promise<boolean> } = {}) => async (arg: T): Promise<void> => {
     // get class wrapper from classes container
     const instanceWrapperConstructor = container.get(targetClass.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(arg))) {
+      return
+    }
 
     // resolve class to get single instance of classp
     const instance = resolve(instanceWrapperConstructor)

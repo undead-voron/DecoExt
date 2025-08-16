@@ -153,6 +153,169 @@ class ExtensionMonitor {
 }
 ```
 
+## Filtering Events
+
+All management decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onExtensionEnabled, onExtensionDisabled, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class ManagementFilterService {
+  // Only handle changes to specific extensions
+  @onExtensionEnabled({ 
+    filter: (info) => info.id !== browser.runtime.id // Don't handle our own extension
+  })
+  handleOtherExtensionEnabled(info: browser.Management.ExtensionInfo) {
+    console.log(`Other extension enabled: ${info.name}`);
+    this.analyzeCompatibility(info);
+  }
+
+  // Only handle user extensions (not system/policy extensions)
+  @onExtensionDisabled({ 
+    filter: (info) => info.installType === 'normal' 
+  })
+  handleUserExtensionDisabled(info: browser.Management.ExtensionInfo) {
+    console.log(`User extension disabled: ${info.name}`);
+    this.updateCompatibilityCheck();
+  }
+
+  // Only handle extensions with specific permissions
+  @onExtensionInstalled({ 
+    filter: (info) => info.permissions?.includes('tabs') || info.permissions?.includes('activeTab')
+  })
+  handleTabExtensionInstalled(info: browser.Management.ExtensionInfo) {
+    console.log(`Extension with tab permissions installed: ${info.name}`);
+    this.checkTabConflicts(info);
+  }
+
+  private analyzeCompatibility(info: browser.Management.ExtensionInfo) {
+    // Analyze compatibility with other extensions
+  }
+
+  private updateCompatibilityCheck() {
+    // Update compatibility status
+  }
+
+  private checkTabConflicts(info: browser.Management.ExtensionInfo) {
+    // Check for potential conflicts with tab-related functionality
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onExtensionUninstalled, InjectableService } from 'deco-ext';
+
+// Module-level configuration (accessible to filters)
+const monitoredExtensions = new Set(['extension-id-1', 'extension-id-2']);
+const dangerousPermissions = ['webRequest', 'webRequestBlocking', 'proxy'];
+
+// Helper functions for extension analysis
+function isKnownPublisher(info: browser.Management.ExtensionInfo): boolean {
+  // Check if the extension is from a known/trusted publisher
+  return false; // Example implementation
+}
+
+function hasHighRiskPermissions(info: browser.Management.ExtensionInfo): boolean {
+  // Check if extension has high-risk permissions
+  return info.permissions?.some(perm => dangerousPermissions.includes(perm)) || false;
+}
+
+@InjectableService()
+class AdvancedManagementService {
+
+  // Filter based on extension categories or types
+  @onExtensionEnabled({ 
+    filter: async (info) => {
+      // Only handle extensions that might affect our functionality
+      const hasConflictingPermissions = info.permissions?.some(perm => 
+        dangerousPermissions.some(dangerous => perm.includes(dangerous))
+      );
+      
+      return hasConflictingPermissions;
+    }
+  })
+  handlePotentiallyConflictingExtension(info: browser.Management.ExtensionInfo) {
+    console.log(`Extension with potentially conflicting permissions enabled: ${info.name}`);
+    this.assessSecurityImplications(info);
+  }
+
+  // Only handle monitored extensions
+  @onExtensionUninstalled({ 
+    filter: (info) => monitoredExtensions.has(info.id) 
+  })
+  handleMonitoredExtensionRemoval(info: browser.Management.ExtensionInfo) {
+    console.log(`Monitored extension uninstalled: ${info.name}`);
+    this.cleanupMonitoredExtensionData(info.id);
+    monitoredExtensions.delete(info.id);
+  }
+
+  // Filter based on extension metadata
+  @onExtensionInstalled({ 
+    filter: (info) => {
+      // Only handle extensions from unknown publishers
+      const isFromKnownPublisher = isKnownPublisher(info);
+      const hasHighRisk = hasHighRiskPermissions(info);
+      
+      return !isFromKnownPublisher && hasHighRisk;
+    }
+  })
+  handleSuspiciousExtensionInstallation(info: browser.Management.ExtensionInfo) {
+    console.log(`Potentially suspicious extension installed: ${info.name}`);
+    this.flagForSecurityReview(info);
+  }
+
+  private assessSecurityImplications(info: browser.Management.ExtensionInfo) {
+    // Assess security implications of the new extension
+  }
+
+  private cleanupMonitoredExtensionData(extensionId: string) {
+    // Clean up data related to the monitored extension
+  }
+
+
+
+  private flagForSecurityReview(info: browser.Management.ExtensionInfo) {
+    // Flag extension for manual security review
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onExtensionEnabled, extensionInfo, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class ExtensionTrackingService {
+  @onExtensionEnabled({ 
+    filter: (info) => info.type === 'extension' && info.enabled === true
+  })
+  trackActiveExtensions(
+    @extensionInfo('id') extensionId: string,
+    @extensionInfo('name') name: string,
+    @extensionInfo('version') version: string
+  ) {
+    console.log(`Active extension tracked: ${name} v${version} (${extensionId})`);
+    this.updateExtensionRegistry(extensionId, name, version);
+  }
+
+  private updateExtensionRegistry(id: string, name: string, version: string) {
+    // Update internal registry of active extensions
+  }
+}
+```
+
 ## Parameter Decorators
 
 The Management API provides parameter decorators for specific event types:

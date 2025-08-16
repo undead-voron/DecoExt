@@ -305,6 +305,127 @@ class ZoomTracker {
 }
 ```
 
+## Filtering Events
+
+All tab decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onTabCreated, onTabUpdated, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class TabFilterService {
+  // Only handle tabs created with specific URLs
+  @onTabCreated({ 
+    filter: (tab) => tab.url?.startsWith('https://github.com') 
+  })
+  handleGitHubTabs(tab: browser.Tabs.Tab) {
+    console.log(`GitHub tab created: ${tab.title}`);
+  }
+
+  // Only handle tabs that finish loading (not other update events)
+  @onTabUpdated({ 
+    filter: (arg) => arg.details.status === 'complete' 
+  })
+  handlePageLoadComplete(arg: { details: browser.Tabs.OnUpdatedChangeInfoType, tabId: number, tab: browser.Tabs.Tab }) {
+    console.log(`Page finished loading: ${arg.tab.title}`);
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onTabActivated, onTabRemoved, InjectableService } from 'deco-ext';
+
+// Module-level configuration for filters
+const ZOOM_THRESHOLD = 0.25;
+const MONITORED_DOMAINS = ['github.com', 'stackoverflow.com'];
+
+@InjectableService()
+class TabFilterService {
+  // Only handle tab activation in specific windows
+  @onTabActivated({ 
+    filter: async (activeInfo) => {
+      try {
+        // You can use async logic in filters
+        const window = await browser.windows.get(activeInfo.windowId);
+        return window.type === 'normal'; // Skip popup windows
+      } catch {
+        return false; // Handle case where window doesn't exist
+      }
+    }
+  })
+  handleNormalWindowActivation(activeInfo: browser.Tabs.OnActivatedActiveInfoType) {
+    console.log(`Tab ${activeInfo.tabId} activated in normal window`);
+  }
+
+  // Only handle tabs closed individually (not due to window closure)
+  @onTabRemoved({ 
+    filter: (info) => !info.isWindowClosing 
+  })
+  handleIndividualTabClosure(info: browser.Tabs.OnRemovedRemoveInfoType & { tabId: number }) {
+    console.log(`Individual tab ${info.tabId} was closed`);
+  }
+
+  // Filter zoom changes based on zoom level threshold (using module-level constant)
+  @onTabZoomChange({ 
+    filter: (zoomInfo) => Math.abs(zoomInfo.newZoomFactor - 1.0) > ZOOM_THRESHOLD
+  })
+  handleSignificantZoomChange(zoomChangeInfo: {
+    tabId: number;
+    oldZoomFactor: number;
+    newZoomFactor: number;
+    zoomSettings: browser.Tabs.ZoomSettings;
+  }) {
+    console.log(`Significant zoom change in tab ${zoomChangeInfo.tabId}: ${zoomChangeInfo.newZoomFactor}`);
+  }
+
+  // Filter tabs from monitored domains using module-level data
+  @onTabCreated({ 
+    filter: (tab) => {
+      if (!tab.url) return false;
+      try {
+        const url = new URL(tab.url);
+        return MONITORED_DOMAINS.some(domain => url.hostname.includes(domain));
+      } catch {
+        return false;
+      }
+    }
+  })
+  handleMonitoredDomainTabs(tab: browser.Tabs.Tab) {
+    console.log(`Tab created for monitored domain: ${tab.url}`);
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onTabUpdated, tabUpdatedDetails, tabUpdatedTab, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class TabFilterService {
+  @onTabUpdated({ 
+    filter: (arg) => arg.details.title !== undefined // Only when title changes
+  })
+  handleTitleChange(
+    @tabUpdatedDetails('title') newTitle: string,
+    @tabUpdatedTab('id') tabId: number,
+    @tabUpdatedTab('url') url: string
+  ) {
+    console.log(`Tab ${tabId} title changed to: "${newTitle}" for URL: ${url}`);
+  }
+}
+```
+
 ## Parameter Decorators
 
 ### activatedTabDetails

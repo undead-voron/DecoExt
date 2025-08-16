@@ -204,6 +204,135 @@ class SearchService {
 }
 ```
 
+## Filtering Events
+
+All omnibox decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onOmniboxInputChanged, onOmniboxInputEntered, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class OmniboxFilterService {
+  // Only handle inputs with minimum length
+  @onOmniboxInputChanged({ 
+    filter: (text, suggest) => text.length >= 3 
+  })
+  handleLongQueries(text: string, suggest: (suggestions: browser.Omnibox.SuggestResult[]) => void) {
+    console.log(`Processing query: ${text}`);
+    this.generateSuggestions(text, suggest);
+  }
+
+  // Only handle specific command patterns
+  @onOmniboxInputChanged({ 
+    filter: (text) => text.startsWith('search ') || text.startsWith('find ') 
+  })
+  handleSearchCommands(text: string, suggest: (suggestions: browser.Omnibox.SuggestResult[]) => void) {
+    console.log(`Search command: ${text}`);
+    this.handleSearchQuery(text.substring(text.indexOf(' ') + 1), suggest);
+  }
+
+  // Filter entered inputs by type
+  @onOmniboxInputEntered({ 
+    filter: (text, disposition) => disposition === 'currentTab' 
+  })
+  handleCurrentTabNavigation(text: string, disposition: browser.Omnibox.OnInputEnteredDisposition) {
+    console.log(`Navigating in current tab: ${text}`);
+    this.navigateCurrentTab(text);
+  }
+
+  private generateSuggestions(text: string, suggest: (suggestions: browser.Omnibox.SuggestResult[]) => void) {
+    // Generate suggestions for the query
+  }
+
+  private handleSearchQuery(query: string, suggest: (suggestions: browser.Omnibox.SuggestResult[]) => void) {
+    // Handle search-specific queries
+  }
+
+  private navigateCurrentTab(text: string) {
+    // Navigate in current tab
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onOmniboxInputStarted, onOmniboxDeleteSuggestion, InjectableService } from 'deco-ext';
+
+// Module-level configuration (accessible to filters)
+const activeUsers = new Set(['user1', 'user2']);
+
+// Helper function for user authentication
+async function getCurrentUser(): Promise<string> {
+  // Get current user identifier
+  return 'user1'; // Example implementation
+}
+
+@InjectableService()
+class AdvancedOmniboxService {
+
+  // Filter input events based on user context
+  @onOmniboxInputStarted({ 
+    filter: async () => {
+      const currentUser = await getCurrentUser();
+      return activeUsers.has(currentUser);
+    }
+  })
+  handleAuthorizedUserInput() {
+    console.log('Authorized user started omnibox input');
+    this.enableAdvancedFeatures();
+  }
+
+  // Filter suggestion deletions by content type
+  @onOmniboxDeleteSuggestion({ 
+    filter: (text) => text.includes('http') || text.includes('www.') 
+  })
+  handleUrlSuggestionDeletion(text: string) {
+    console.log(`URL suggestion deleted: ${text}`);
+    this.removeFromHistory(text);
+  }
+
+  private enableAdvancedFeatures() {
+    // Enable advanced omnibox features for authorized users
+  }
+
+  private removeFromHistory(url: string) {
+    // Remove URL from suggestion history
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+```typescript
+import { onOmniboxInputEntered, omniboxText, omniboxDisposition, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class OmniboxTrackingService {
+  @onOmniboxInputEntered({ 
+    filter: (text, disposition) => text.startsWith('track:') && disposition === 'newForegroundTab'
+  })
+  handleTrackingCommands(
+    @omniboxText() command: string,
+    @omniboxDisposition() disposition: browser.Omnibox.OnInputEnteredDisposition
+  ) {
+    const trackingData = command.substring(6); // Remove 'track:' prefix
+    console.log(`Tracking command in new tab: ${trackingData}`);
+    this.processTrackingData(trackingData);
+  }
+
+  private processTrackingData(data: string) {
+    // Process tracking data
+  }
+}
+```
+
 ## Parameter Decorators
 
 The Omnibox API provides parameter decorators for events that pass parameters:

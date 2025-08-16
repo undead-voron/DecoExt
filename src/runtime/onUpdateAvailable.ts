@@ -35,9 +35,9 @@ export const updateDetails = decorator
  * The details object contains the version of the available update.
  * If you want the update to be applied immediately, you must call browser.runtime.reload().
  */
-export function onUpdateAvailable<T extends AllowedListener>() {
+export function onUpdateAvailable<T extends AllowedListener>({ filter }: { filter?: (details: UpdateInfo) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

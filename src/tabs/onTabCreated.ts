@@ -28,9 +28,9 @@ export const createdTabDetails = decorator
  * @description
  * Method is called with parameter that represents the tab object browser.Tabs.Tab.
  */
-export function onTabCreated<T extends AllowedListener>() {
+export function onTabCreated<T extends AllowedListener>({ filter }: { filter?: (tab: browser.Tabs.Tab) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

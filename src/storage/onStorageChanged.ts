@@ -123,7 +123,7 @@ function listenerWrapper(
   constructor: any,
   method: AllowedListener,
   propertyKey: string | symbol,
-  options: StorageChangeOptions = {},
+  options: StorageChangeOptions & { filter?: (data: StorageChangeData) => boolean | Promise<boolean> } = {},
 ) {
   return async (data: StorageChangeData): Promise<void> => {
     // Filter by domain if specified
@@ -139,6 +139,10 @@ function listenerWrapper(
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor) {
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+    }
+
+    if (options.filter && !(await options.filter(data))) {
+      return
     }
 
     const instance = resolve(instanceWrapperConstructor)
@@ -179,7 +183,7 @@ function listenerWrapper(
  * ```
  */
 export function onStorageChanged<T extends AllowedListener>(
-  options: StorageChangeOptions = {},
+  options: StorageChangeOptions & { filter?: (data: StorageChangeData) => boolean | Promise<boolean> } = {},
 ) {
   createInitialListener()
 

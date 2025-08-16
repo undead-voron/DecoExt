@@ -35,7 +35,7 @@ function decoratorsHandler(details: browser.Runtime.OnInstalledDetailsType, cons
   }
 }
 
-function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'>> = {}) {
+function listenerWrapper(constructor: any, method: AllowedListener, propertyKey: string | symbol, arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'> & { filter?: (details: browser.Runtime.OnInstalledDetailsType) => boolean | Promise<boolean> }> = {}) {
   return async (details: browser.Runtime.OnInstalledDetailsType): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
@@ -43,7 +43,11 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
 
     const isReasonValid = !arg.reason || arg.reason === details.reason
     const checkTemporal = !arg.temporary || (arg.temporary && details.temporary)
+
     if (isReasonValid && checkTemporal) {
+      if (arg.filter && !(await arg.filter(details))) {
+        return
+      }
       const instance = resolve(instanceWrapperConstructor)
       if (instance.init && typeof instance.init === 'function') {
         // await instance initialization
@@ -65,7 +69,7 @@ function listenerWrapper(constructor: any, method: AllowedListener, propertyKey:
  * Method is called with parameter that contains 'details' property with the interface matching browser.Runtime.OnInstalledDetailsType type.
  */
 export function onInstalled<T extends AllowedListener>(
-  arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'>> = {},
+  arg: Partial<Pick<browser.Runtime.OnInstalledDetailsType, 'reason' | 'temporary'> & { filter?: (details: browser.Runtime.OnInstalledDetailsType) => boolean | Promise<boolean> }> = {},
 ) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {

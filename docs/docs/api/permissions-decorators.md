@@ -122,6 +122,154 @@ class PermissionService {
 }
 ```
 
+## Filtering Events
+
+All permission decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onPermissionsAdded, onPermissionsRemoved, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class PermissionFilterService {
+  // Only handle specific permission additions
+  @onPermissionsAdded({ 
+    filter: (permissions) => permissions.permissions?.includes('storage') || permissions.permissions?.includes('tabs')
+  })
+  handleImportantPermissions(permissions: browser.Permissions.Permissions) {
+    console.log('Important permissions added:', permissions.permissions);
+    this.enableAdvancedFeatures();
+  }
+
+  // Only handle host permission changes
+  @onPermissionsAdded({ 
+    filter: (permissions) => permissions.origins && permissions.origins.length > 0 
+  })
+  handleHostPermissions(permissions: browser.Permissions.Permissions) {
+    console.log('New host permissions:', permissions.origins);
+    this.updateContentScriptRegistration();
+  }
+
+  // Filter permission removals
+  @onPermissionsRemoved({ 
+    filter: (permissions) => permissions.permissions?.includes('notifications') 
+  })
+  handleNotificationPermissionRemoval(permissions: browser.Permissions.Permissions) {
+    console.log('Notification permission removed - disabling notifications');
+    this.disableNotificationFeatures();
+  }
+
+  private enableAdvancedFeatures() {
+    // Enable features that require these permissions
+  }
+
+  private updateContentScriptRegistration() {
+    // Update content script registration for new origins
+  }
+
+  private disableNotificationFeatures() {
+    // Disable notification-related features
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onPermissionsRemoved, InjectableService } from 'deco-ext';
+
+// Module-level configuration (accessible to filters)
+const criticalPermissions = ['storage', 'tabs', 'activeTab'];
+
+// Helper functions for permission management
+function isInitialSetup(): boolean {
+  // Check if this is during initial extension setup
+  return false; // Example implementation
+}
+
+function isUserManagingPermissions(): boolean {
+  // Check if user is actively in permissions management UI
+  return false; // Example implementation
+}
+
+@InjectableService()
+class AdvancedPermissionService {
+
+  // Only handle removal of critical permissions
+  @onPermissionsRemoved({ 
+    filter: async (permissions) => {
+      if (!permissions.permissions) return false;
+      
+      // Check if any critical permissions are being removed
+      return permissions.permissions.some(perm => 
+        criticalPermissions.includes(perm)
+      );
+    }
+  })
+  handleCriticalPermissionRemoval(permissions: browser.Permissions.Permissions) {
+    console.log('Critical permissions removed:', permissions.permissions);
+    this.gracefullyDisableFeatures(permissions.permissions || []);
+  }
+
+  // Filter based on user context
+  @onPermissionsAdded({ 
+    filter: (permissions) => {
+      // Only handle during initial setup or when user is actively managing permissions
+      const isSetup = isInitialSetup();
+      const isUserAction = isUserManagingPermissions();
+      
+      return isSetup || isUserAction;
+    }
+  })
+  handleUserRequestedPermissions(permissions: browser.Permissions.Permissions) {
+    console.log('User-requested permissions added:', permissions);
+    this.showPermissionConfirmation(permissions);
+  }
+
+  private gracefullyDisableFeatures(removedPermissions: string[]) {
+    // Gracefully disable features that depend on removed permissions
+  }
+
+
+
+  private showPermissionConfirmation(permissions: browser.Permissions.Permissions) {
+    // Show confirmation to user about new permissions
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onPermissionsAdded, permissionDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class PermissionTrackingService {
+  @onPermissionsAdded({ 
+    filter: (permissions) => permissions.origins !== undefined // Only host permission additions
+  })
+  trackHostPermissions(
+    @permissionDetails('origins') origins: string[] | undefined
+  ) {
+    if (origins) {
+      console.log('New host permissions granted:', origins);
+      origins.forEach(origin => this.analyzeOrigin(origin));
+    }
+  }
+
+  private analyzeOrigin(origin: string) {
+    // Analyze the new origin for security or functionality purposes
+  }
+}
+```
+
 ## Parameter Decorators
 
 ### permissionDetails

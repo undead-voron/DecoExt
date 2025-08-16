@@ -293,6 +293,165 @@ class ConfigurationService {
 }
 ```
 
+## Filtering Events
+
+All storage decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives a single `StorageChangeData` object containing `{ changes: Record<string, browser.Storage.StorageChange>, areaName: string }` and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onStorageChanged, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class StorageFilterService {
+  // Only handle changes to specific keys
+  @onStorageChanged({ 
+    filter: (data) => 'userSettings' in data.changes || 'theme' in data.changes 
+  })
+  handleSettingsChanges(data: { changes: { [key: string]: browser.Storage.StorageChange }, areaName: string }) {
+    console.log('Settings changed:', Object.keys(data.changes));
+    this.updateUISettings(data.changes);
+  }
+
+  // Only handle local storage changes (not sync)
+  @onStorageChanged({ 
+    filter: (data) => data.areaName === 'local' 
+  })
+  handleLocalStorageChanges(data: { changes: { [key: string]: browser.Storage.StorageChange }, areaName: string }) {
+    console.log('Local storage changes:', data.changes);
+    this.processLocalChanges(data.changes);
+  }
+
+  // Only handle sync storage changes
+  @onStorageChanged({ 
+    filter: (data) => data.areaName === 'sync' 
+  })
+  handleSyncStorageChanges(data: { changes: { [key: string]: browser.Storage.StorageChange }, areaName: string }) {
+    console.log('Sync storage changes:', data.changes);
+    this.syncSettingsAcrossDevices(data.changes);
+  }
+
+  private updateUISettings(changes: { [key: string]: browser.Storage.StorageChange }) {
+    // Update UI based on settings changes
+  }
+
+  private processLocalChanges(changes: { [key: string]: browser.Storage.StorageChange }) {
+    // Handle local storage changes
+  }
+
+  private syncSettingsAcrossDevices(changes: { [key: string]: browser.Storage.StorageChange }) {
+    // Handle cross-device synchronization
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onStorageChanged, InjectableService } from 'deco-ext';
+
+// Module-level configuration (accessible to filters)
+const watchedKeys = ['userData', 'preferences', 'cache'];
+const sensitiveKeys = ['apiKey', 'tokens', 'credentials'];
+
+// Helper function for security verification
+async function verifySecurityContext(): Promise<boolean> {
+  // Verify that the change is happening in a secure context
+  return true; // Example implementation
+}
+
+@InjectableService()
+class AdvancedStorageService {
+  // Filter changes to watched keys only
+  @onStorageChanged({ 
+    filter: (data) => {
+      return Object.keys(data.changes).some(key => watchedKeys.includes(key));
+    }
+  })
+  handleWatchedKeyChanges(data: { changes: { [key: string]: browser.Storage.StorageChange }, areaName: string }) {
+    console.log('Watched keys changed:', Object.keys(data.changes));
+    this.processImportantChanges(data.changes);
+  }
+
+  // Filter sensitive data changes with additional security checks
+  @onStorageChanged({ 
+    filter: async (data) => {
+      const hasSensitiveChanges = Object.keys(data.changes).some(key => 
+        sensitiveKeys.includes(key)
+      );
+      
+      if (!hasSensitiveChanges) return false;
+      
+      // Additional security check
+      const isAuthorized = await verifySecurityContext();
+      return isAuthorized;
+    }
+  })
+  handleSensitiveDataChanges(data: { changes: { [key: string]: browser.Storage.StorageChange }, areaName: string }) {
+    console.log('Sensitive data changed - processing securely');
+    this.securelyProcessChanges(data.changes);
+  }
+
+  // Filter based on change type (additions vs removals vs updates)
+  @onStorageChanged({ 
+    filter: (data) => {
+      // Only handle actual value changes (not just additions or removals)
+      return Object.values(data.changes).some(change => 
+        change.oldValue !== undefined && change.newValue !== undefined
+      );
+    }
+  })
+  handleValueUpdates(data: { changes: { [key: string]: browser.Storage.StorageChange }, areaName: string }) {
+    console.log('Values updated (not added/removed):', data.changes);
+    this.trackValueChanges(data.changes);
+  }
+
+  private processImportantChanges(changes: { [key: string]: browser.Storage.StorageChange }) {
+    // Process changes to important keys
+  }
+
+  private securelyProcessChanges(changes: { [key: string]: browser.Storage.StorageChange }) {
+    // Handle sensitive data changes with extra security
+  }
+
+  private trackValueChanges(changes: { [key: string]: browser.Storage.StorageChange }) {
+    // Track changes for analytics or debugging
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onStorageChanged, storageChanges, storageAreaName, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class StorageTrackingService {
+  @onStorageChanged({ 
+    filter: (data) => data.areaName === 'sync' && 'userProfile' in data.changes
+  })
+  trackUserProfileSync(
+    @storageChanges('userProfile') profileChange: browser.Storage.StorageChange | undefined,
+    @storageAreaName() area: string
+  ) {
+    if (profileChange) {
+      console.log(`User profile synced in ${area}:`, profileChange.newValue);
+      this.updateUserInterface(profileChange.newValue);
+    }
+  }
+
+  private updateUserInterface(newProfile: any) {
+    // Update UI with new profile data
+  }
+}
+```
+
 ## Parameter Decorators
 
 ### storageChanges

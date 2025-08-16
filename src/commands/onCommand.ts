@@ -15,11 +15,15 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol, options: { filter?: (command: string) => boolean | Promise<boolean> } = {}) {
   return async (arg: { command: string }): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter(arg.command))) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -42,9 +46,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey
  * The method is called with a 'command' parameter by default unless parameter decorators are used.
  * The command parameter is the name of the command that was executed.
  */
-export function onCommand<T extends AllowedListener>() {
+export function onCommand<T extends AllowedListener>({ filter }: { filter?: (command: string) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

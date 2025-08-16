@@ -29,10 +29,10 @@ export const navigationCommittedDetails = decorator
  * Method is called when navigation is committed.
  * The method is called with a 'details' parameter by default unless parameter decorators are used.
  */
-export function onNavigationCommitted<T extends AllowedListener>() {
+export function onNavigationCommitted<T extends AllowedListener>({ filter }: { filter?: (details: browser.WebNavigation.OnCommittedDetailsType) => boolean | Promise<boolean> } = {}) {
   // TODO: add filtering
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

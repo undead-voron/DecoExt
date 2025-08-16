@@ -31,9 +31,9 @@ export const extensionId = decorator
  * The method is called with an 'id' parameter containing the extension id by default
  * unless parameter decorators are used.
  */
-export function onExtensionUninstalled<T extends AllowedListener>() {
+export function onExtensionUninstalled<T extends AllowedListener>({ filter }: { filter?: (arg: { id: string }) => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

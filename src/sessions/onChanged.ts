@@ -15,11 +15,15 @@ const createInitialListener = callOnce(() => {
   })
 })
 
-function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol) {
+function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey: string | symbol, options: { filter?: () => boolean | Promise<boolean> } = {}) {
   return async (): Promise<void> => {
     const instanceWrapperConstructor = container.get(constructor.constructor)
     if (!instanceWrapperConstructor)
       throw new Error('decorator should be applied on class decorated by "Service" decorator')
+
+    if (options.filter && !(await options.filter())) {
+      return
+    }
 
     const instance = resolve(instanceWrapperConstructor)
     if (instance.init && typeof instance.init === 'function') {
@@ -41,9 +45,9 @@ function listenerWrapper(constructor: any, method: AllowedListener, _propertyKey
  * Method is called when recently closed tabs and/or windows are changed.
  * This event does not actually provide any arguments in the browser API
  */
-export function onSessionChanged<T extends AllowedListener>() {
+export function onSessionChanged<T extends AllowedListener>({ filter }: { filter?: () => boolean | Promise<boolean> } = {}) {
   createInitialListener()
   return (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): void => {
-    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey))
+    listeners.add(listenerWrapper(target, descriptor.value as T, propertyKey, { filter }))
   }
 }

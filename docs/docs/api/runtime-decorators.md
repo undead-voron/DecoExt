@@ -202,6 +202,149 @@ class UpdateService {
 }
 ```
 
+## Filtering Events
+
+All runtime decorators support an optional `filter` parameter that allows you to conditionally handle events. The filter function receives the same arguments as your decorated method and should return `true` to proceed with handling the event, or `false` to skip it.
+
+**⚡ Performance Benefit:** When a filter returns `false` (or `Promise<false>`), the decorated class instance is **not created at all**, significantly reducing memory usage and improving performance by avoiding unnecessary object instantiation and initialization.
+
+**🔒 Scope Limitation:** Filter functions execute **before** class instantiation, so they cannot access instance properties or methods (`this` is not available). Use module-level variables, closures, or static data for filtering logic.
+
+### Basic Filtering Examples
+
+```typescript
+import { onInstalled, onStartup, InjectableService } from 'deco-ext';
+
+// Helper functions for filtering (accessible to filters)
+function isUpdateFromOldVersion(version: string): boolean {
+  // Check if updating from version older than 2.0.0
+  const [major] = version.split('.').map(Number);
+  return major < 2;
+}
+
+@InjectableService()
+class RuntimeFilterService {
+  // Only handle fresh installations (not updates or browser restarts)
+  @onInstalled({ 
+    filter: (details) => details.reason === 'install' 
+  })
+  handleFreshInstallation(details: browser.Runtime.OnInstalledDetailsType) {
+    console.log('Extension installed for the first time');
+    this.setupDefaultConfiguration();
+  }
+
+  // Only handle updates from specific version ranges
+  @onInstalled({ 
+    filter: (details) => {
+      if (details.reason !== 'update') return false;
+      const previousVersion = details.previousVersion;
+      return previousVersion && isUpdateFromOldVersion(previousVersion);
+    }
+  })
+  handleLegacyUpdate(details: browser.Runtime.OnInstalledDetailsType) {
+    console.log(`Updating from legacy version: ${details.previousVersion}`);
+    this.migrateLegacyData();
+  }
+
+  private setupDefaultConfiguration() {
+    // Setup default settings for new users
+  }
+
+  private migrateLegacyData() {
+    // Migrate data from older versions
+  }
+}
+```
+
+### Advanced Filtering Examples
+
+```typescript
+import { onSuspend, onUpdateAvailable, InjectableService } from 'deco-ext';
+
+// Helper functions for advanced filtering (accessible to filters)
+async function checkPendingTasks(): Promise<boolean> {
+  // Check if there are any pending background tasks
+  return false; // Example implementation
+}
+
+function isImportantUpdate(version: string): boolean {
+  // Logic to determine if this is a critical update
+  return version.includes('security') || version.endsWith('.0'); // Major versions
+}
+
+@InjectableService()
+class AdvancedRuntimeService {
+  // Only handle startup during specific hours (e.g., work hours)
+  @onStartup({ 
+    filter: () => {
+      const hour = new Date().getHours();
+      return hour >= 9 && hour <= 17; // Only during work hours
+    }
+  })
+  handleWorkHourStartup() {
+    console.log('Extension started during work hours');
+    this.enableProductivityMode();
+  }
+
+  // Filter suspend events based on user activity
+  @onSuspend({ 
+    filter: async () => {
+      // Only handle suspend if there's no pending work
+      const hasPendingTasks = await checkPendingTasks();
+      return !hasPendingTasks;
+    }
+  })
+  handleCleanSuspend() {
+    console.log('Extension suspended with no pending tasks');
+  }
+
+  // Filter update notifications based on update type
+  @onUpdateAvailable({ 
+    filter: (details) => {
+      return isImportantUpdate(details.version);
+    }
+  })
+  handleImportantUpdate(details: browser.Runtime.OnUpdateAvailableDetailsType) {
+    console.log(`Important update available: ${details.version}`);
+    this.promptUserForUpdate();
+  }
+
+  private enableProductivityMode() {
+    // Enable features for work hours
+  }
+
+  private promptUserForUpdate() {
+    // Notify user about important update
+  }
+}
+```
+
+### Filter with Parameter Decorators
+
+Filters work seamlessly with parameter decorators:
+
+```typescript
+import { onInstalled, installedDetails, InjectableService } from 'deco-ext';
+
+@InjectableService()
+class InstallationTrackingService {
+  @onInstalled({ 
+    filter: (details) => details.reason === 'update' && details.previousVersion !== undefined
+  })
+  trackVersionUpdate(
+    @installedDetails('previousVersion') oldVersion: string,
+    @installedDetails('reason') reason: string
+  ) {
+    console.log(`Extension updated from version ${oldVersion}`);
+    this.logVersionChange(oldVersion, reason);
+  }
+
+  private logVersionChange(oldVersion: string, reason: string) {
+    // Log the version change for analytics
+  }
+}
+```
+
 ## Parameter Decorators
 
 The Runtime API includes parameter decorators for specific event types:
