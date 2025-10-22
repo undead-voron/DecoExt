@@ -30,9 +30,12 @@ class UserService {
   }
 }
 
-// Get an instance of the service
-const userService = resolve(UserService);
-userService.getUserInfo(); // LoggingService is automatically injected
+(async () => {
+  // Get an instance of the service
+  const userService = resolve(UserService);
+  await userService.init()
+  userService.getUserInfo(); // LoggingService is automatically injected
+})()
 ```
 
 ## Dependency Injection
@@ -87,17 +90,21 @@ class CounterService {
   }
 }
 
-const counter1 = resolve(CounterService);
-const counter2 = resolve(CounterService);
+(async () => {
+  const counter1 = resolve(CounterService);
+  const counter2 = resolve(CounterService);
 
-console.log(counter1.increment()); // 1
-console.log(counter2.increment()); // 2, not 1, because counter1 and counter2 are the same instance
-console.log(counter1 === counter2); // true
+  await Promise.all([conter1.init(), counter2.init()])
+
+  console.log(counter1.increment()); // 1
+  console.log(counter2.increment()); // 2, not 1, because counter1 and counter2 are the same instance
+  console.log(counter1 === counter2); // true
+})()
 ```
 
 ## Initialization with the `init` Method
 
-A special `init` method can be defined in your service that will be automatically called before any decorated methods are executed. This is useful for performing setup tasks like loading data from storage, making API calls, or other asynchronous operations.
+A special `init` method can be defined in your service that will be automatically called before any decorated methods are executed. This is useful for performing setup tasks like loading data from storage, making API calls, or other asynchronous operations. Incase you need instance of a service outside decorators, init must be called manually.
 
 ```typescript
 import { InjectableService, onBrowserStartup, resolve } from 'deco-ext';
@@ -123,8 +130,11 @@ class SettingsService {
   }
 }
 
-// You don't need to call init() manually - it's handled automatically
-const settingsService = resolve(SettingsService);
+(async () => {
+  const settingsService = resolve(SettingsService);
+  await settingsService.init()
+})()
+
 ```
 
 The `init` method:
@@ -174,8 +184,12 @@ class UserRepository {
   }
 }
 
-// Resolving UserRepository will ensure DatabaseService is initialized first
-const userRepo = resolve(UserRepository);
+(async () => {
+  // Resolving and calling init on UserRepository will ensure DatabaseService is initialized first
+  const userRepo = resolve(UserRepository);
+  await userRepo.init()
+  userRepo.getUsers()
+})()
 ```
 
 ## Usage with Event Decorators
