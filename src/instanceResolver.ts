@@ -13,4 +13,3 @@ export function resolve<T extends { new(...args: any[]): any }>(target: T): Inst
   const ResolvedWrapper = container.get(target) ?? target
   return new ResolvedWrapper(...params.map(resolve))
 }
-
