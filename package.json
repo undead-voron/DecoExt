@@ -3,7 +3,7 @@
   "displayName": "DecoExt",
   "package-name": "deco-ext",
   "type": "module",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Library for implementing SOLID principles in your browser extension project",
   "author": "Den Inozemtsev",
   "license": "MIT",
